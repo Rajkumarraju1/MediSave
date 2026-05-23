@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — MediSave</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.12) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        /* Glassmorphic Navbar */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 5%;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a5b4fc, var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-light);
+            text-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Content Container */
+        .container {
+            max-width: 800px;
+            margin: 4rem auto;
+            padding: 0 5%;
+        }
+
+        .header-section {
+            margin-bottom: 3rem;
+            text-align: left;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #ffffff, #c7d2fe, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .date {
+            color: var(--primary-light);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .content-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 3rem;
+            border-radius: 24px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.3);
+        }
+
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem;
+            color: #ffffff;
+            border-left: 4px solid var(--primary);
+            padding-left: 12px;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            font-size: 1.05rem;
+        }
+
+        ul {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            padding-left: 1.5rem;
+            font-size: 1.05rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .highlight-box {
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin: 2rem 0;
+        }
+
+        .highlight-box p {
+            margin-bottom: 0;
+            color: var(--text-main);
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 8rem;
+            padding: 4rem 5% 3rem;
+            border-top: 1px solid var(--border-color);
+            background: rgba(15, 23, 42, 0.95);
+            text-align: center;
+        }
+
+        .footer-logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 1rem;
+        }
+
+        .copyright {
+            color: #475569;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.2rem; }
+            .content-card { padding: 1.5rem; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="index.html" class="logo">💊 MediSave</a>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="support.html">Support</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="header-section">
+            <span class="date">Last Updated: May 23, 2026</span>
+            <h1>Privacy Policy</h1>
+        </div>
+
+        <div class="content-card">
+            <p>At MediSave, we prioritize the privacy and security of your personal health data. This Privacy Policy details how we handle, persist, and protect your information to maintain absolute compliance with Google Play Store standards, the General Data Protection Regulation (GDPR), and the Health Insurance Portability and Accountability Act (HIPAA).</p>
+
+            <div class="highlight-box">
+                <p><strong>Core Privacy Guarantee:</strong> MediSave operates on an offline-first architecture. Your medication names, dosages, and compliance logs are stored securely on your local device and are only transmitted to the cloud when you explicitly enable caregiver coordination.</p>
+            </div>
+
+            <h2>1. Information We Collect</h2>
+            <p>To provide medication reminders and optional family synchronization, the application collects and utilizes the following data:</p>
+            <ul>
+                <li><strong>Authentication Data:</strong> Your email address and credentials, securely authenticated via Firebase Authentication, to identify your active session.</li>
+                <li><strong>Local Medication Details:</strong> Medication names, dosages, times, and adherence records (TAKEN, MISSED, PENDING) stored inside a secure local Room SQLite database on your device.</li>
+                <li><strong>Caregiver Connections:</strong> User IDs and accepted connection statuses, utilized solely if you explicitly opt-in to sync adherence logs with family members or trusted caregivers.</li>
+                <li><strong>FCM Tokens:</strong> Encrypted Firebase Cloud Messaging tokens, stored strictly to route push alerts for missed medication doses or connection invites.</li>
+            </ul>
+
+            <h2>2. Device-Level Permissions</h2>
+            <p>To function as a reliable scheduling assistant, MediSave utilizes the following high-priority Android system permissions:</p>
+            <ul>
+                <li><strong>Exact Alarm Permission (SCHEDULE_EXACT_ALARM):</strong> Required to schedule precise reminders that bypass device standby/doze states. This ensures medication alarms trigger exactly when due. Tapping the "Alarm precision" card in Settings allows you to manage this permission directly in system preferences.</li>
+                <li><strong>Notification Permission (POST_NOTIFICATIONS):</strong> Utilized to post daily medication reminders, nudge follow-ups, and caregiver adherence updates to your notification shade.</li>
+            </ul>
+
+            <h2>3. Secure Cloud Synchronization & Sharing</h2>
+            <p>If caregiver connectivity is activated, local adherence logs are synced over encrypted HTTPS channels to Firebase Firestore database clusters. Adherence sharing follows strict security rules: only accepted and authenticated family connections are granted read access to your adherence logs. No medical details are shared with third-party networks, brokers, or advertisers.</p>
+
+            <h2>4. Absolute Data Control & Deletion</h2>
+            <p>You retain 100% ownership and control over your data. Inside the **Account screen** ("Danger Zone") of the MediSave app, you can trigger a permanent account deletion sequence. Initiating this transaction executes the following operations:</p>
+            <ul>
+                <li>Permanently deletes your Firebase Authentication account.</li>
+                <li>Purges all of your secure cloud adherence logs, connections, and metadata from Firebase Firestore.</li>
+                <li>Clears all local databases, app preference caches, and secure storage containers instantly.</li>
+            </ul>
+
+            <h2>5. HIPAA Security Statement</h2>
+            <p>MediSave implements administrative, physical, and technical safeguards aligned with HIPAA standards to secure Protected Health Information (PHI). We utilize end-to-end HTTPS encryption, tokenized authentication, secure database separation, and offline-first storage practices to ensure maximum data integrity.</p>
+
+            <h2>6. Contact Us</h2>
+            <p>For questions or support regarding our privacy practices, please contact us at our <a href="support.html" style="color: var(--primary-light); text-decoration: none;">Support Portal</a>.</p>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-logo">💊 MediSave</div>
+        <p class="copyright">&copy; 2026 MediSave App. GitHub Pages Production Node.</p>
+    </footer>
+
+</body>
+</html>

@@ -21,8 +21,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.activity.compose.BackHandler
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pralayakaveri.medisave.ui.theme.*
 import com.pralayakaveri.medisave.viewmodel.SettingsViewModel
+import com.pralayakaveri.medisave.viewmodel.DeletionStage
+
+enum class DeleteDialogStage {
+    NONE,
+    WARNING,
+    VERIFICATION
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +47,22 @@ fun AccountScreen(
     val primaryUser by viewModel.primaryUser.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val successState = uiState as? ProfileUiState.Success
+    
+    val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+    var deleteDialogStage by remember { mutableStateOf(DeleteDialogStage.NONE) }
+    var passwordInput by remember { mutableStateOf("") }
+
+    // Redirect to login when deletion is completed successfully
+    LaunchedEffect(settingsUiState.isAccountDeleted) {
+        if (settingsUiState.isAccountDeleted) {
+            onLogout()
+        }
+    }
+
+    // Lock navigation during critical database / auth deletion transactions
+    BackHandler(enabled = settingsUiState.deletionStage == DeletionStage.PURGING || settingsUiState.deletionStage == DeletionStage.AUTH_DELETE) {
+        // Block hardware back gesture
+    }
     
     Scaffold(
         topBar = {
@@ -205,7 +230,7 @@ fun AccountScreen(
                     title = "Delete account",
                     subtitle = "Permanently removes all your data",
                     titleColor = Color.Red.copy(alpha = 0.7f),
-                    onClick = { /* Delete account intent */ }
+                    onClick = { deleteDialogStage = DeleteDialogStage.WARNING }
                 )
             }
 
@@ -248,6 +273,211 @@ fun AccountScreen(
                     fontSize = 12.sp,
                     color = TextSecondary
                 )
+            }
+        }
+    }
+
+    // --- ARCHITECTURAL ACCOUNT DELETION WORKFLOWS ---
+
+    // Dialog Step 1: Warning and Irreversible Impact Info
+    // Dialog Step 1: Warning and Irreversible Impact Info (Only mounts if stage is WARNING and VM is IDLE)
+    if (deleteDialogStage == DeleteDialogStage.WARNING && settingsUiState.deletionStage == DeletionStage.IDLE) {
+        AlertDialog(
+            onDismissRequest = { deleteDialogStage = DeleteDialogStage.NONE },
+            title = { Text("Delete Account?", fontWeight = FontWeight.Bold) },
+            text = { Text("Are you sure you want to stop using MediSave? This action is permanent and will immediately disconnect you from all family connections.") },
+            confirmButton = {
+                TextButton(onClick = { 
+                    deleteDialogStage = DeleteDialogStage.VERIFICATION
+                }) {
+                    Text("NEXT", color = Color.Red, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteDialogStage = DeleteDialogStage.NONE }) {
+                    Text("CANCEL", color = TextSecondary)
+                }
+            }
+        )
+    }
+
+    // Dialog Step 2: Provider-gated Re-authentication (Only mounts if stage is VERIFICATION and VM is IDLE)
+    if (deleteDialogStage == DeleteDialogStage.VERIFICATION && settingsUiState.deletionStage == DeletionStage.IDLE) {
+        val providers = settingsViewModel.getSignInProviders()
+        val isGoogle = providers.contains("google.com")
+        
+        AlertDialog(
+            onDismissRequest = { 
+                if (settingsUiState.deletionStage == DeletionStage.IDLE) {
+                    deleteDialogStage = DeleteDialogStage.NONE 
+                }
+            },
+            title = { Text("Identity Verification", fontWeight = FontWeight.Bold) },
+            text = { 
+                Column {
+                    Text("This will permanently delete ALL your local & cloud health data. This action is completely irreversible.")
+                    Spacer(Modifier.height(16.dp))
+                    
+                    if (isGoogle) {
+                        Surface(
+                            color = Color(0xFFFFF8E1),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = "Please re-authenticate your Google Account to complete the deletion transaction.",
+                                modifier = Modifier.padding(12.dp),
+                                fontSize = 13.sp,
+                                color = Color(0xFFE65100)
+                            )
+                        }
+                    } else {
+                        OutlinedTextField(
+                            value = passwordInput,
+                            onValueChange = { passwordInput = it },
+                            label = { Text("Enter Login Password") },
+                            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                            isError = settingsUiState.error != null && settingsUiState.deletionStage == DeletionStage.IDLE,
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BrandingGreen, focusedLabelColor = BrandingGreen)
+                        )
+                    }
+                    
+                    if (settingsUiState.error != null && settingsUiState.deletionStage == DeletionStage.IDLE) {
+                        Text(
+                            text = settingsUiState.error!!, 
+                            color = Color.Red, 
+                            fontSize = 12.sp, 
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { 
+                        if (isGoogle) {
+                            settingsViewModel.startDeletionFlow(null) 
+                        } else {
+                            settingsViewModel.startDeletionFlow(passwordInput)
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                    enabled = (passwordInput.isNotBlank() || isGoogle) && !settingsUiState.isLoading
+                ) {
+                    Text(if (isGoogle) "VERIFY & DELETE" else "DELETE PERMANENTLY", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                if (settingsUiState.deletionStage == DeletionStage.IDLE) {
+                    TextButton(onClick = { deleteDialogStage = DeleteDialogStage.WARNING }) {
+                        Text("GO BACK", color = TextSecondary)
+                    }
+                }
+            }
+        )
+    }
+
+    // Fullscreen Deletion Transaction Progress & Error Handler (Only mounts if VM has active transaction/error)
+    if (settingsUiState.deletionStage != DeletionStage.IDLE && settingsUiState.deletionStage != DeletionStage.COMPLETED) {
+        val isLocked = settingsUiState.deletionStage == DeletionStage.PURGING || settingsUiState.deletionStage == DeletionStage.AUTH_DELETE
+        
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.7f))
+                .clickable(enabled = false) {},
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                modifier = Modifier.padding(32.dp),
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White
+            ) {
+                Column(
+                    modifier = Modifier.padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (settingsUiState.error == null) {
+                        CircularProgressIndicator(color = BrandingGreen)
+                        Spacer(Modifier.height(24.dp))
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Error",
+                            tint = Color.Red,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(Modifier.height(16.dp))
+                    }
+
+                    Text(
+                        text = settingsUiState.deletionStage.name.replace("_", " "),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = TextPrimary
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = settingsUiState.deletionProgress,
+                        fontSize = 14.sp,
+                        color = TextSecondary,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    
+                    if (settingsUiState.error != null) {
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            text = settingsUiState.error!!, 
+                            color = Color.Red, 
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(Modifier.height(24.dp))
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Retry Button
+                            Button(
+                                onClick = { 
+                                    if (settingsUiState.deletionStage == DeletionStage.AUTH_DELETE) {
+                                        settingsViewModel.retryAuthDelete()
+                                    } else {
+                                        settingsViewModel.startDeletionFlow(passwordInput, isResume = true)
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = BrandingGreen)
+                            ) {
+                                Text("RETRY", fontWeight = FontWeight.Bold)
+                            }
+                            
+                            // Cancel Button - resets dialog state and signs out safely
+                            OutlinedButton(
+                                onClick = { 
+                                    settingsViewModel.logout {
+                                        deleteDialogStage = DeleteDialogStage.NONE
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("CANCEL", color = TextSecondary)
+                            }
+                        }
+                    } else if (!isLocked) {
+                        // Allow cancellation during cancellable stages (like REAUTH)
+                        Spacer(Modifier.height(24.dp))
+                        OutlinedButton(
+                            onClick = {
+                                deleteDialogStage = DeleteDialogStage.NONE
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("ABORT DELETION", color = Color.Red)
+                        }
+                    }
+                }
             }
         }
     }

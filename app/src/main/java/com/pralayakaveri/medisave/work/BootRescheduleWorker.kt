@@ -31,10 +31,10 @@ class BootRescheduleWorker(
         val repository = MedicineRepository(context)
 
         return try {
+            val preferenceManager = com.pralayakaveri.medisave.data.PreferenceManager(context)
             // Resolve userId offline-first through multi-tiered sources
             var userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
             if (userId.isNullOrEmpty()) {
-                val preferenceManager = com.pralayakaveri.medisave.data.PreferenceManager(context)
                 userId = preferenceManager.sessionUserId.firstOrNull()
             }
             if (userId.isNullOrEmpty()) {
@@ -69,8 +69,14 @@ class BootRescheduleWorker(
                                 Log.d("BootRescheduleWorker", "Catch-up: Marking ${medicine.name} at $time as MISSED (scheduledTime: $scheduledTimeMs, graceMs: $graceMs, now: $now)")
                                 repository.updateMedicineStatus(userId, medicine.id, todayStr, time, DoseStatus.MISSED.name)
                                 
-                                // Trigger High-Priority Missed Notification
-                                showCatchUpMissedNotification(context, medicine.id, medicine.name, time)
+                                // Trigger High-Priority Missed Notification if settings allow
+                                val pushEnabled = preferenceManager.pushNotificationsEnabled.firstOrNull() ?: true
+                                val isAlertEnabled = preferenceManager.missedDoseAlertEnabled.firstOrNull() ?: true
+                                if (pushEnabled && isAlertEnabled) {
+                                    showCatchUpMissedNotification(context, medicine.id, medicine.name, time)
+                                } else {
+                                    Log.d("BootRescheduleWorker", "Catch-up notification suppressed by settings: push=$pushEnabled, alert=$isAlertEnabled")
+                                }
                             } catch (e: Exception) {
                                 Log.e("BootRescheduleWorker", "Catch-up update failed for ${medicine.name}", e)
                             }

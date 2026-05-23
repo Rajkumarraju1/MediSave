@@ -16,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 class FCMService : FirebaseMessagingService() {
 
@@ -38,18 +39,42 @@ class FCMService : FirebaseMessagingService() {
         super.onMessageReceived(message)
 
         val data = message.data
-        when (data["type"]) {
-            "CONNECTION_REQUEST" -> {
-                val requestId = data["requestId"] ?: ""
-                val senderId = data["senderId"] ?: ""
-                showConnectionRequestNotification(requestId, senderId)
-            }
-            "CAREGIVER_ALERT" -> {
-                showCaregiverAlertNotification(data)
-            }
-            "MISSED" -> {
-                // Backward compatibility for old watchdog/triggers
-                showMissedDoseNotification(data)
+        val type = data["type"] ?: return
+
+        serviceScope.launch {
+            try {
+                val prefManager = PreferenceManager(applicationContext)
+                val pushEnabled = prefManager.pushNotificationsEnabled.first()
+                if (!pushEnabled) {
+                    android.util.Log.i("FCMService", "FCM message received but suppressed because Push Notifications are disabled in Settings")
+                    return@launch
+                }
+
+                when (type) {
+                    "CONNECTION_REQUEST" -> {
+                        val requestId = data["requestId"] ?: ""
+                        val senderId = data["senderId"] ?: ""
+                        showConnectionRequestNotification(requestId, senderId)
+                    }
+                    "CAREGIVER_ALERT" -> {
+                        val familyAlertsEnabled = prefManager.familyAlertsEnabled.first()
+                        if (familyAlertsEnabled) {
+                            showCaregiverAlertNotification(data)
+                        } else {
+                            android.util.Log.i("FCMService", "CAREGIVER_ALERT suppressed because Family Alerts are disabled in Settings")
+                        }
+                    }
+                    "MISSED" -> {
+                        val familyAlertsEnabled = prefManager.familyAlertsEnabled.first()
+                        if (familyAlertsEnabled) {
+                            showMissedDoseNotification(data)
+                        } else {
+                            android.util.Log.i("FCMService", "MISSED FCM alert suppressed because Family Alerts are disabled in Settings")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("FCMService", "Error processing remote message in serviceScope", e)
             }
         }
     }

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms & Conditions — MediSave</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.12) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        /* Glassmorphic Navbar */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 5%;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a5b4fc, var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-light);
+            text-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Content Container */
+        .container {
+            max-width: 800px;
+            margin: 4rem auto;
+            padding: 0 5%;
+        }
+
+        .header-section {
+            margin-bottom: 3rem;
+            text-align: left;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #ffffff, #c7d2fe, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .date {
+            color: var(--primary-light);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .content-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 3rem;
+            border-radius: 24px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.3);
+        }
+
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem;
+            color: #ffffff;
+            border-left: 4px solid var(--primary);
+            padding-left: 12px;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            font-size: 1.05rem;
+        }
+
+        .alert-box {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin: 2rem 0;
+        }
+
+        .alert-box p {
+            margin-bottom: 0;
+            color: #fca5a5;
+            font-weight: 500;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 8rem;
+            padding: 4rem 5% 3rem;
+            border-top: 1px solid var(--border-color);
+            background: rgba(15, 23, 42, 0.95);
+            text-align: center;
+        }
+
+        .footer-logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 1rem;
+        }
+
+        .copyright {
+            color: #475569;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.2rem; }
+            .content-card { padding: 1.5rem; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="index.html" class="logo">💊 MediSave</a>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="support.html">Support</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="header-section">
+            <span class="date">Last Updated: May 23, 2026</span>
+            <h1>Terms & Conditions</h1>
+        </div>
+
+        <div class="content-card">
+            <p>Welcome to MediSave. By accessing or using the MediSave mobile application or associated web portals, you agree to comply with and be bound by the following Terms and Conditions of Service. Please review them carefully.</p>
+
+            <div class="alert-box">
+                <p><strong>⚠️ CRITICAL MEDICAL DISCLAIMER:</strong> MediSave is purely a scheduling aid and reminder assistant. It does not replace medical advice, physician diagnostics, or prescription instructions. Always consult a healthcare professional regarding dosage, timing, or medical changes.</p>
+            </div>
+
+            <h2>1. Acceptable Use & Account Security</h2>
+            <p>You agree to provide accurate and complete registration details. You are solely responsible for keeping your login credentials, passwords, and security codes confidential. Any activity under your account is your responsibility.</p>
+
+            <h2>2. User Responsibilities & Reminders</h2>
+            <p>While MediSave operates on exact alarms (`SCHEDULE_EXACT_ALARM`) and background synchronization systems to maximize reminder reliability, device states such as low battery, restricted background processing, or power-saving restrictions can occasionally delay alarms. You agree to maintain secondary manual adherence oversight for critical medications.</p>
+
+            <h2>3. Caregiver Sync Opt-In</h2>
+            <p>Connecting with caregivers is entirely optional and under your direct control. By initiating a caregiver invitation and sharing connection codes, you authorize designated individuals to receive real-time adherence updates if you fail to mark a dose as taken.</p>
+
+            <h2>4. Limitation of Liability</h2>
+            <p>MediSave, its developers, and affiliates are not liable for any direct, indirect, incidental, or consequential damages resulting from skipped doses, missing reminder notifications, software downtime, or caregiver sync delays. You use the service entirely at your own risk.</p>
+
+            <h2>5. Service Modifications</h2>
+            <p>We reserve the right to modify, suspend, or discontinue any feature or service under MediSave at any time without prior notice to ensure ongoing platform maintenance, compliance audits, or architectural stability.</p>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-logo">💊 MediSave</div>
+        <p class="copyright">&copy; 2026 MediSave App. GitHub Pages Production Node.</p>
+    </footer>
+
+</body>
+</html>

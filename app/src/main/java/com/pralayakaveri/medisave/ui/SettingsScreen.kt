@@ -36,19 +36,6 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showProDialog by remember { mutableStateOf(false) }
-    var passwordInput by remember { mutableStateOf("") }
-    
-    // Redirect on completion
-    LaunchedEffect(uiState.isAccountDeleted) {
-        if (uiState.isAccountDeleted) {
-            onLogout()
-        }
-    }
-
-    // Prevent accidental back navigation during deletion
-    BackHandler(enabled = uiState.deletionStage != DeletionStage.IDLE && uiState.deletionStage != DeletionStage.COMPLETED) {
-        // Do nothing - block back
-    }
     
     val context = androidx.compose.ui.platform.LocalContext.current
     var isSystemPermissionGranted by remember { 
@@ -77,6 +64,7 @@ fun SettingsScreen(
                 } else {
                     androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
                 }
+                viewModel.refreshExactAlarmPermission()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -87,8 +75,6 @@ fun SettingsScreen(
 
     var showSnoozeDialog by remember { mutableStateOf(false) }
     var showThemeSheet by remember { mutableStateOf(false) }
-    var showDeleteStep1 by remember { mutableStateOf(false) }
-    var showDeleteStep2 by remember { mutableStateOf(false) }
 
     val sheetState = rememberModalBottomSheetState()
 
@@ -165,13 +151,44 @@ fun SettingsScreen(
                     trailingText = precisionText,
                     trailingTextColor = precisionColor,
                     onClick = {
-                        if (uiState.isAlarmPrecisionDegraded) {
+                        try {
                             val intent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                                 android.content.Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
                                     data = android.net.Uri.fromParts("package", context.packageName, null)
                                 }
-                            } else { null }
-                            intent?.let { context.startActivity(it) }
+                            } else {
+                                android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = android.net.Uri.fromParts("package", context.packageName, null)
+                                }
+                            }
+                            context.startActivity(intent)
+                        } catch (e: android.content.ActivityNotFoundException) {
+                            android.util.Log.e("SettingsScreen", "ActivityNotFoundException launching exact alarm setting with package URI, trying generic intent", e)
+                            try {
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                                    val genericIntent = android.content.Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                                    context.startActivity(genericIntent)
+                                } else {
+                                    throw e
+                                }
+                            } catch (e2: Exception) {
+                                android.util.Log.e("SettingsScreen", "Failed to launch exact alarm setting with generic intent, trying application details settings", e2)
+                                try {
+                                    val appDetailsIntent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                        data = android.net.Uri.fromParts("package", context.packageName, null)
+                                    }
+                                    context.startActivity(appDetailsIntent)
+                                } catch (e3: Exception) {
+                                    android.util.Log.e("SettingsScreen", "Failed to launch application details setting, trying general Settings", e3)
+                                    try {
+                                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_SETTINGS))
+                                    } catch (e4: Exception) {
+                                        android.util.Log.e("SettingsScreen", "Failed to launch general Settings", e4)
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("SettingsScreen", "Failed to launch exact alarm setting", e)
                         }
                     }
                 )
@@ -193,7 +210,7 @@ fun SettingsScreen(
                     icon = Icons.Outlined.Group,
                     iconColor = Color(0xFFE0F2F1),
                     title = "Family connection alerts",
-                    subtitle = "Kamal misses a dose → notify me",
+                    subtitle = "Receive alerts when connected family members miss doses",
                     checked = uiState.familyAlertsEnabled,
                     onCheckedChange = { viewModel.toggleFamilyAlerts(it) }
                 )
@@ -238,8 +255,13 @@ fun SettingsScreen(
                     title = "Privacy policy",
                     subtitle = "How we protect your data",
                     onClick = { 
-                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://medisave-app.com/privacy"))
-                        context.startActivity(intent)
+                        try {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://rajkumarraju1.github.io/MediSave/privacy.html"))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            android.util.Log.e("SettingsScreen", "Failed to launch web browser for privacy policy", e)
+                            android.widget.Toast.makeText(context, "No web browser found to open link.", android.widget.Toast.LENGTH_SHORT).show()
+                        }
                     }
                 )
             }
@@ -253,15 +275,6 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
                 ) {
                     Text("Logout", color = TextPrimary, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            item {
-                TextButton(
-                    onClick = { showDeleteStep1 = true },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
-                ) {
-                    Text("Delete Account", color = Color.Red.copy(alpha = 0.7f), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -314,129 +327,6 @@ fun SettingsScreen(
                         Text(theme, fontSize = 16.sp)
                         if (uiState.appTheme == theme) {
                             Icon(Icons.Default.Check, contentDescription = null, tint = PrimaryGreen)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if (showDeleteStep1) {
-        AlertDialog(
-            onDismissRequest = { showDeleteStep1 = false },
-            title = { Text("Delete Account?") },
-            text = { Text("Are you sure you want to stop using MediSave? This action will disconnect you from all family connections.") },
-            confirmButton = {
-                TextButton(onClick = { 
-                    showDeleteStep1 = false
-                    showDeleteStep2 = true 
-                }) {
-                    Text("NEXT", color = Color.Red)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteStep1 = false }) {
-                    Text("CANCEL")
-                }
-            }
-        )
-    }
-
-    if (showDeleteStep2) {
-        AlertDialog(
-            onDismissRequest = { if (uiState.deletionStage == DeletionStage.IDLE) showDeleteStep2 = false },
-            title = { Text("Final Confirmation") },
-            text = { 
-                Column {
-                    Text("This will permanently delete ALL your health data, medicines, and family connections. This action is irreversible.")
-                    Spacer(Modifier.height(16.dp))
-                    
-                    if (viewModel.getSignInProviders().contains("google.com")) {
-                        Text("Please verify your identity with Google to continue.", style = MaterialTheme.typography.bodySmall)
-                    } else {
-                        OutlinedTextField(
-                            value = passwordInput,
-                            onValueChange = { passwordInput = it },
-                            label = { Text("Enter Password") },
-                            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                            modifier = Modifier.fillMaxWidth(),
-                            isError = uiState.error != null && uiState.deletionStage == DeletionStage.IDLE
-                        )
-                    }
-                    
-                    if (uiState.error != null && uiState.deletionStage == DeletionStage.IDLE) {
-                        Text(uiState.error!!, color = Color.Red, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
-                    }
-                }
-            },
-            confirmButton = {
-                val isGoogle = viewModel.getSignInProviders().contains("google.com")
-                Button(
-                    onClick = { 
-                        if (isGoogle) {
-                            // In a real app, trigger Google intent here. 
-                            // For this MVP, we'll assume the user is re-authenticated if they click this.
-                            // Ideally, we'd use a callback from the Activity.
-                            viewModel.startDeletionFlow(null) 
-                        } else {
-                            viewModel.startDeletionFlow(passwordInput)
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                    enabled = (passwordInput.isNotBlank() || isGoogle) && !uiState.isLoading
-                ) {
-                    Text(if (isGoogle) "VERIFY & DELETE" else "DELETE PERMANENTLY")
-                }
-            },
-            dismissButton = {
-                if (uiState.deletionStage == DeletionStage.IDLE) {
-                    TextButton(onClick = { showDeleteStep2 = false }) {
-                        Text("GO BACK")
-                    }
-                }
-            }
-        )
-    }
-
-    // --- DELETION PROGRESS OVERLAY ---
-    if (uiState.deletionStage != DeletionStage.IDLE && uiState.deletionStage != DeletionStage.COMPLETED) {
-        Box(
-            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).clickable(enabled = false) {},
-            contentAlignment = Alignment.Center
-        ) {
-            Surface(
-                modifier = Modifier.padding(32.dp),
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White
-            ) {
-                Column(
-                    modifier = Modifier.padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator(color = PrimaryGreen)
-                    Spacer(Modifier.height(24.dp))
-                    Text(
-                        uiState.deletionStage.name.replace("_", " "),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        uiState.deletionProgress,
-                        fontSize = 14.sp,
-                        color = TextSecondary,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                    
-                    if (uiState.error != null) {
-                        Spacer(Modifier.height(16.dp))
-                        Text(uiState.error!!, color = Color.Red, fontSize = 12.sp)
-                        Spacer(Modifier.height(16.dp))
-                        Button(onClick = { 
-                            if (uiState.deletionStage == DeletionStage.AUTH_DELETE) viewModel.retryAuthDelete()
-                            else viewModel.startDeletionFlow(passwordInput, isResume = true)
-                        }) {
-                            Text("RETRY")
                         }
                     }
                 }

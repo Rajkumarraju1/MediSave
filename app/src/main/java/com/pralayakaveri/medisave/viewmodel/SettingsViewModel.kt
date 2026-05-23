@@ -523,4 +523,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
+
+    fun refreshExactAlarmPermission() {
+        viewModelScope.launch {
+            try {
+                val alarmManager = getApplication<Application>().getSystemService(android.content.Context.ALARM_SERVICE) as android.app.AlarmManager
+                val currentPermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    alarmManager.canScheduleExactAlarms()
+                } else {
+                    true
+                }
+                val cachedPermission = prefManager.lastExactAlarmPermissionState.first()
+                if (currentPermission != cachedPermission) {
+                    prefManager.saveExactAlarmPermissionState(currentPermission)
+                    android.util.Log.i("SettingsVM", "Exact alarm permission state changed from cached $cachedPermission to $currentPermission. Persisting state.")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SettingsVM", "Failed to refresh exact alarm permission state", e)
+            }
+        }
+    }
 }

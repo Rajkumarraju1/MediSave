@@ -105,6 +105,13 @@ class AlarmReceiver : BroadcastReceiver() {
     }
 
     private suspend fun handleSnooze(context: Context, userId: String, medicineId: String, name: String, dose: String, date: String, time: String, durationMin: Int) {
+        // Ghost-alert safety net: abort silently if medicine was deleted
+        val db = AppDatabase.getDatabase(context)
+        if (db.medicineReminderDao().getById(medicineId) == null) {
+            Log.w("AlarmReceiver", "handleSnooze: medicine $medicineId no longer exists — suppressing snooze alarm")
+            return
+        }
+
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel((medicineId + time).hashCode())
 
@@ -257,11 +264,12 @@ class AlarmReceiver : BroadcastReceiver() {
                 val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 notificationManager.cancel((medicineId + time).hashCode())
                 
-                // Only show local notification if enabled in settings
+                // Only show local notification if push notifications are enabled and missed alerts are enabled in settings
                 val prefManager = com.pralayakaveri.medisave.data.PreferenceManager(context)
+                val pushEnabled = prefManager.pushNotificationsEnabled.firstOrNull() ?: true
                 val isAlertEnabled = prefManager.missedDoseAlertEnabled.firstOrNull() ?: true
                 
-                if (isAlertEnabled) {
+                if (pushEnabled && isAlertEnabled) {
                     showMissedNotification(context, medicineId, name, time)
                 }
             } catch (e: Exception) {
@@ -272,7 +280,20 @@ class AlarmReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun showMissedNotification(context: Context, medicineId: String, name: String, time: String) {
+    private suspend fun showMissedNotification(context: Context, medicineId: String, name: String, time: String) {
+        // Setting behavior integrity guard: abort if push notifications or missed alerts are disabled in settings
+        val prefManager = com.pralayakaveri.medisave.data.PreferenceManager(context)
+        val pushEnabled = prefManager.pushNotificationsEnabled.firstOrNull() ?: true
+        if (!pushEnabled) {
+            Log.i("AlarmReceiver", "showMissedNotification suppressed: Push Notifications are disabled in Settings")
+            return
+        }
+        val isAlertEnabled = prefManager.missedDoseAlertEnabled.firstOrNull() ?: true
+        if (!isAlertEnabled) {
+            Log.i("AlarmReceiver", "showMissedNotification suppressed: Missed Dose Alerts are disabled in Settings")
+            return
+        }
+
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         
         val missedChannelId = "MEDISAVE_MISSED"
@@ -303,6 +324,21 @@ class AlarmReceiver : BroadcastReceiver() {
     }
 
     private suspend fun showNotification(context: Context, userId: String, medicineId: String, name: String, dose: String, date: String, time: String) {
+        // Setting behavior integrity guard: abort if push notifications are disabled in settings
+        val prefManager = com.pralayakaveri.medisave.data.PreferenceManager(context)
+        val pushEnabled = prefManager.pushNotificationsEnabled.firstOrNull() ?: true
+        if (!pushEnabled) {
+            Log.i("AlarmReceiver", "showNotification suppressed: Push Notifications are disabled in Settings")
+            return
+        }
+
+        // Ghost-alert safety net: abort silently if medicine was deleted
+        val db = AppDatabase.getDatabase(context)
+        if (db.medicineReminderDao().getById(medicineId) == null) {
+            Log.w("AlarmReceiver", "showNotification: medicine $medicineId no longer exists — suppressing notification")
+            return
+        }
+
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         // Create channel if needed (Android 13+ Escalation Compliance)
@@ -483,7 +519,15 @@ class AlarmReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun showNudgeNotification(context: Context, userId: String, medicineId: String, name: String, date: String, time: String, stage: Int) {
+    private suspend fun showNudgeNotification(context: Context, userId: String, medicineId: String, name: String, date: String, time: String, stage: Int) {
+        // Setting behavior integrity guard: abort if push notifications are disabled in settings
+        val prefManager = com.pralayakaveri.medisave.data.PreferenceManager(context)
+        val pushEnabled = prefManager.pushNotificationsEnabled.firstOrNull() ?: true
+        if (!pushEnabled) {
+            Log.i("AlarmReceiver", "showNudgeNotification suppressed: Push Notifications are disabled in Settings")
+            return
+        }
+
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         
         // Create channel if needed (Android 13+ Escalation Compliance)

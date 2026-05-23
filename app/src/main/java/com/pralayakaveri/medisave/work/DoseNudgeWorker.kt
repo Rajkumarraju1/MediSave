@@ -8,6 +8,7 @@ import androidx.work.WorkerParameters
 import com.pralayakaveri.medisave.data.AppDatabase
 import com.pralayakaveri.medisave.model.DoseStatus
 import com.pralayakaveri.medisave.reminder.AlarmReceiver
+import kotlinx.coroutines.flow.first
 
 class DoseNudgeWorker(
     context: Context,
@@ -26,7 +27,11 @@ class DoseNudgeWorker(
         val currentStatus = medicine.getStatusAt(date, time)
         
         if (currentStatus == DoseStatus.PENDING.name) {
-            showNudgeNotification(medicineName, time)
+            val prefManager = com.pralayakaveri.medisave.data.PreferenceManager(applicationContext)
+            val pushEnabled = prefManager.pushNotificationsEnabled.first()
+            if (pushEnabled) {
+                showNudgeNotification(medicineName, time)
+            }
         }
 
         return Result.success()

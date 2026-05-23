@@ -45,11 +45,12 @@ class MissedDoseWorker(
                 android.util.Log.d("MissedDoseWorker", "CRITICAL: Marking MISSED for $medicineName at $time (Grace passed: ${medicine.gracePeriodMinutes}m)")
                 repository.updateMedicineStatus(userId, medicineId, date, time, DoseStatus.MISSED.name)
                 
-                // Only show local notification if enabled in settings
+                // Only show local notification if push notifications are enabled and missed alerts are enabled in settings
                 val prefManager = com.pralayakaveri.medisave.data.PreferenceManager(applicationContext)
+                val pushEnabled = prefManager.pushNotificationsEnabled.first()
                 val isAlertEnabled = prefManager.missedDoseAlertEnabled.first()
                 
-                if (isAlertEnabled) {
+                if (pushEnabled && isAlertEnabled) {
                     showMissedNotification(medicineName, time)
                 }
             } catch (e: Exception) {

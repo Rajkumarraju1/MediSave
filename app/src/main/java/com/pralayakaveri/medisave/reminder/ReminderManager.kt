@@ -108,11 +108,64 @@ class ReminderManager(private val context: Context) {
     }
 
     fun cancelAlarmsForMedicine(medicine: Medicine) {
+        val todayDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
         medicine.times.forEach { time ->
+            // 1. Primary Recurring Alarm
             val pendingIntent = createPendingIntent(medicine.id, time)
             alarmManager.cancel(pendingIntent)
             pendingIntent.cancel()
-            Log.d("ReminderManager", "Cancelled alarm for ${medicine.id} at $time")
+            Log.d("ReminderManager", "Cancelled recurring alarm for ${medicine.id} at $time")
+
+            // 2. Active Snooze Alarm
+            val snoozeIntent = Intent(context, AlarmReceiver::class.java)
+            val snoozeReqCode = (medicine.id + time + "SNOOZE").hashCode()
+            val snoozePI = PendingIntent.getBroadcast(
+                context,
+                snoozeReqCode,
+                snoozeIntent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+            if (snoozePI != null) {
+                alarmManager.cancel(snoozePI)
+                snoozePI.cancel()
+                Log.d("ReminderManager", "Cancelled active snooze alarm for ${medicine.id} at $time")
+            }
+
+            // 3. Active Nudge Alarms (Stage 1 & 2)
+            for (stage in 1..2) {
+                val nudgeIntent = Intent(context, AlarmReceiver::class.java).apply {
+                    action = AlarmReceiver.ACTION_TRIGGER_NUDGE
+                }
+                val nudgeReqCode = (medicine.id + todayDate + time + "NUDGE_$stage").hashCode()
+                val nudgePI = PendingIntent.getBroadcast(
+                    context,
+                    nudgeReqCode,
+                    nudgeIntent,
+                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+                )
+                if (nudgePI != null) {
+                    alarmManager.cancel(nudgePI)
+                    nudgePI.cancel()
+                    Log.d("ReminderManager", "Cancelled active nudge stage $stage for ${medicine.id} at $todayDate $time")
+                }
+            }
+
+            // 4. Active Missed-Check Alarm
+            val missedIntent = Intent(context, AlarmReceiver::class.java).apply {
+                action = AlarmReceiver.ACTION_TRIGGER_MISSED
+            }
+            val missedReqCode = (medicine.id + todayDate + time + "MISSED").hashCode()
+            val missedPI = PendingIntent.getBroadcast(
+                context,
+                missedReqCode,
+                missedIntent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+            if (missedPI != null) {
+                alarmManager.cancel(missedPI)
+                missedPI.cancel()
+                Log.d("ReminderManager", "Cancelled active missed-check alarm for ${medicine.id} at $todayDate $time")
+            }
         }
         // Cancel all WorkManager tasks for this medicine
         androidx.work.WorkManager.getInstance(context).cancelAllWorkByTag("MEDICINE_ID_${medicine.id}")

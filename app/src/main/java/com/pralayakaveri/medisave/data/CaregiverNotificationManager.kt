@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 import com.google.firebase.firestore.ListenerRegistration
+import kotlinx.coroutines.flow.first
 
 class CaregiverNotificationManager(private val context: Context) {
     private val db = FirebaseFirestore.getInstance()
@@ -93,27 +94,38 @@ class CaregiverNotificationManager(private val context: Context) {
     }
 
     private fun showMissedDoseAlert(memberName: String, medicineName: String, time: String, logId: String) {
-        // PERMISSION CHECK
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            if (androidx.core.content.ContextCompat.checkSelfPermission(
-                    context,
-                    android.Manifest.permission.POST_NOTIFICATIONS
-                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
-            ) {
-                return // Skip if no permission
+        scope.launch {
+            val prefManager = PreferenceManager(context)
+            val pushEnabled = prefManager.pushNotificationsEnabled.catch { emit(true) }.first()
+            val familyAlertsEnabled = prefManager.familyAlertsEnabled.catch { emit(true) }.first()
+            
+            if (!pushEnabled || !familyAlertsEnabled) {
+                android.util.Log.i("CaregiverManager", "showMissedDoseAlert suppressed. Push: $pushEnabled, FamilyAlerts: $familyAlertsEnabled")
+                return@launch
             }
+
+            // PERMISSION CHECK
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                if (androidx.core.content.ContextCompat.checkSelfPermission(
+                        context,
+                        android.Manifest.permission.POST_NOTIFICATIONS
+                    ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                ) {
+                    return@launch // Skip if no permission
+                }
+            }
+
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            
+            val builder = NotificationCompat.Builder(context, AlarmReceiver.CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setContentTitle("$memberName missed a dose")
+                .setContentText("$memberName missed their $medicineName at $time")
+                .setPriority(NotificationCompat.PRIORITY_HIGH) 
+                .setAutoCancel(true)
+
+            notificationManager.notify(logId.hashCode(), builder.build())
         }
-
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        
-        val builder = NotificationCompat.Builder(context, AlarmReceiver.CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle("$memberName missed a dose")
-            .setContentText("$memberName missed their $medicineName at $time")
-            .setPriority(NotificationCompat.PRIORITY_HIGH) 
-            .setAutoCancel(true)
-
-        notificationManager.notify(logId.hashCode(), builder.build())
     }
 
     private fun markAsNotified(memberId: String, date: String, logId: String, currentUserId: String) {
