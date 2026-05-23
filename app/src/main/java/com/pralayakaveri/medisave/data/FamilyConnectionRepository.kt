@@ -59,17 +59,20 @@ class FamilyConnectionRepository {
     }
 
     suspend fun sendRequest(receiverId: String, relation: String): Result<Unit> {
+        val senderId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid 
+            ?: return Result.failure(Exception("Not authenticated"))
+
+        if (senderId == receiverId) {
+            return Result.failure(Exception("You cannot connect to yourself"))
+        }
+
+        android.util.Log.d("FamilyConnectionRepo", "Sending connection request from $senderId to $receiverId (relation: $relation)")
+
+        val connectionId = listOf(senderId, receiverId).sorted().joinToString("_")
+        val activeConnRef = db.collection("active_connections").document(connectionId)
+
         return try {
-            val senderId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid 
-                ?: return Result.failure(Exception("Not authenticated"))
-
-            if (senderId == receiverId) {
-                return Result.failure(Exception("You cannot connect to yourself"))
-            }
-
-            android.util.Log.d("FamilyConnectionRepo", "Sending connection request from $senderId to $receiverId (relation: $relation)")
-
-            // Check for existing connection OR pending request
+            // Check for existing pending request first
             val existing = db.collection("connections")
                 .whereEqualTo("senderId", senderId)
                 .whereEqualTo("receiverId", receiverId)
@@ -81,17 +84,24 @@ class FamilyConnectionRepository {
                 return Result.failure(Exception("Request already exists"))
             }
 
-            val connectionData = hashMapOf(
-                "senderId" to senderId,
-                "receiverId" to receiverId,
-                "relation" to relation,
-                "status" to "pending",
-                "timestamp" to System.currentTimeMillis(),
-                "notified" to false,
-                "handledBySender" to false
-            )
+            db.runTransaction { transaction ->
+                val activeConnSnapshot = transaction.get(activeConnRef)
+                if (activeConnSnapshot.exists()) {
+                    throw Exception("You are already connected to this user")
+                }
 
-            db.collection("connections").add(connectionData).await()
+                val connectionData = hashMapOf(
+                    "senderId" to senderId,
+                    "receiverId" to receiverId,
+                    "relation" to relation,
+                    "status" to "pending",
+                    "timestamp" to System.currentTimeMillis(),
+                    "notified" to false,
+                    "handledBySender" to false
+                )
+                val newRequestRef = db.collection("connections").document()
+                transaction.set(newRequestRef, connectionData)
+            }.await()
             Result.success(Unit)
         } catch (e: Exception) {
             android.util.Log.e("FamilyConnectionRepo", "Error sending connection request", e)

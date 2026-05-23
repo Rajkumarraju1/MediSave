@@ -88,6 +88,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 remoteMemberStatus.value = emptyMap()
                 remoteMemberMedicines.value = emptyMap()
                 _acceptedConnections.value = emptyList()
+                _incomingRequests.value = emptyList()
 
                 if (uid != null) {
                     Log.d("PROFILE_DEBUG", "Auth stabilized in ProfileViewModel. uid: $uid")
@@ -136,6 +137,18 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                             .collect { medicinesMap ->
                                 remoteMemberMedicines.value = medicinesMap
                             }
+                        }
+
+                        // 4. Setup Incoming Connection Requests Flow
+                        launch {
+                            connectionRepo.observeIncomingRequests(uid)
+                                .catch { e ->
+                                    Log.e("PROFILE_DEBUG", "Error observing incoming requests", e)
+                                    _snackbarMessages.emit("Error loading requests: ${e.message}")
+                                }
+                                .collect { requests ->
+                                    _incomingRequests.value = requests
+                                }
                         }
                     }
                 } else {

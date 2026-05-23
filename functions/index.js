@@ -70,8 +70,12 @@ exports.sendConnectionRequestNotification = onDocumentCreated(
             return;
         }
 
-        // 3. PREPARE DATA-ONLY PAYLOAD
+        // 3. PREPARE NOTIFICATION + DATA PAYLOAD
         const message = {
+            notification: {
+                title: "New Connection Request",
+                body: "Someone wants to connect with your MediSave account",
+            },
             data: {
                 type: "CONNECTION_REQUEST",
                 requestId: requestId,

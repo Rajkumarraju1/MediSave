@@ -50,6 +50,7 @@ service cloud.firestore {
       //   arbitrary properties or unauthorized metadata that could bypass application logic or lead to privilege escalation.
       allow create: if request.auth != null && 
         request.auth.uid == request.resource.data.senderId &&
+        !isConnected(request.resource.data.senderId, request.resource.data.receiverId) &&
         request.resource.data.keys().hasAll(['senderId', 'receiverId', 'relation', 'status', 'timestamp', 'notified', 'handledBySender']) &&
         request.resource.data.keys().hasOnly(['senderId', 'receiverId', 'relation', 'status', 'timestamp', 'notified', 'handledBySender', 'labels']);
       
