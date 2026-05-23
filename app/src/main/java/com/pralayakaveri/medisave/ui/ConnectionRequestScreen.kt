@@ -69,7 +69,7 @@ fun ConnectionRequestScreen(
     }
 
     Scaffold(containerColor = Color.White) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(modifier = Modifier.fillMaxSize().padding(bottom = padding.calculateBottomPadding())) {
             when (val state = screenState) {
                 is ConsentScreenState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -77,6 +77,20 @@ fun ConnectionRequestScreen(
                     }
                 }
                 is ConsentScreenState.Success -> {
+                    val view = androidx.compose.ui.platform.LocalView.current
+                    DisposableEffect(view) {
+                        if (!view.isInEditMode) {
+                            val window = (view.context as android.app.Activity).window
+                            val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
+                            controller.isAppearanceLightStatusBars = false
+                            onDispose {
+                                controller.isAppearanceLightStatusBars = true
+                            }
+                        } else {
+                            onDispose {}
+                        }
+                    }
+
                     // 1. Scrollable Content (Header + Card)
                     Column(
                         modifier = Modifier
