@@ -179,7 +179,14 @@ fun ConnectionRequestScreen(
                     }
                 }
                 is ConsentScreenState.Error -> {
-                    ErrorUI(onHandled)
+                    ErrorUI(
+                        onHandled = {
+                            scope.launch {
+                                repository.declineRequest(requestId)
+                                onHandled()
+                            }
+                        }
+                    )
                 }
             }
         }

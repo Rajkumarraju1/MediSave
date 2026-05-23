@@ -268,7 +268,7 @@ class ConnectionSearchViewModel(application: Application) : AndroidViewModel(app
 
     private fun mapError(e: Throwable): String {
         return when (e) {
-            is TimeoutCancellationException -> "Request timed out. Please try again."
+            is TimeoutCancellationException -> "Request timed out. Please check your internet connection."
             is IOException -> "No internet connection"
             is com.google.firebase.firestore.FirebaseFirestoreException -> {
                 when (e.code) {
@@ -280,7 +280,19 @@ class ConnectionSearchViewModel(application: Application) : AndroidViewModel(app
                     else -> "A database error occurred. Please try again later."
                 }
             }
-            else -> "An unexpected connection error occurred. Please try again later."
+            else -> {
+                when (e.message) {
+                    "You cannot connect to yourself" -> "You cannot connect to yourself."
+                    "Request already exists" -> "A pending connection request already exists for this user."
+                    "Incoming request already exists" -> "This user has already sent you a connection request. Please accept it from your profile."
+                    "Invalid target user" -> "The target user does not exist or has an invalid account."
+                    "You are already connected to this user" -> "You are already connected to this user."
+                    "Cooldown: 1" -> "Request was declined. Please wait 24 hours before resending."
+                    "Cooldown: 2" -> "Request has been repeatedly declined. Please wait 3 days before resending."
+                    "Cooldown: 3" -> "Request has been repeatedly declined. Please wait 7 days before resending."
+                    else -> e.message ?: "An unexpected connection error occurred. Please try again later."
+                }
+            }
         }
     }
 

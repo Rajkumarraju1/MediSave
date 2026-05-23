@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.launch
 
 class FamilyConnectionRepository {
     private val db = FirebaseFirestore.getInstance()
@@ -72,16 +73,64 @@ class FamilyConnectionRepository {
         val activeConnRef = db.collection("active_connections").document(connectionId)
 
         return try {
-            // Check for existing pending request first
-            val existing = db.collection("connections")
+            // Validate that the receiverId exists in the Firestore users collection
+            val receiverDoc = db.collection("users").document(receiverId).get().await()
+            if (!receiverDoc.exists()) {
+                return Result.failure(Exception("Invalid target user"))
+            }
+
+            // Check for bi-directional requests
+            val outgoingDocs = db.collection("connections")
                 .whereEqualTo("senderId", senderId)
                 .whereEqualTo("receiverId", receiverId)
-                .whereEqualTo("status", "pending")
                 .get()
                 .await()
+                .documents
 
-            if (!existing.isEmpty) {
+            val incomingDocs = db.collection("connections")
+                .whereEqualTo("senderId", receiverId)
+                .whereEqualTo("receiverId", senderId)
+                .get()
+                .await()
+                .documents
+
+            if (outgoingDocs.any { it.getString("status") == "pending" }) {
                 return Result.failure(Exception("Request already exists"))
+            }
+
+            if (incomingDocs.any { it.getString("status") == "pending" }) {
+                return Result.failure(Exception("Incoming request already exists"))
+            }
+
+            // Anti-Spam 90-Day Rolling Cooldown Validation
+            val ninetyDaysAgo = System.currentTimeMillis() - (90L * 24 * 60 * 60 * 1000L)
+            val recentDeclines = outgoingDocs.filter { doc ->
+                doc.getString("status") == "declined" &&
+                (doc.getLong("declinedAt") ?: doc.getLong("timestamp") ?: 0L) >= ninetyDaysAgo
+            }
+
+            val declineCount = recentDeclines.size
+            if (declineCount > 0) {
+                val mostRecentDecline = recentDeclines.maxByOrNull { doc ->
+                    doc.getLong("declinedAt") ?: doc.getLong("timestamp") ?: 0L
+                }
+                val mostRecentDeclinedAt = mostRecentDecline?.getLong("declinedAt") ?: mostRecentDecline?.getLong("timestamp") ?: 0L
+                
+                val cooldown = when {
+                    declineCount <= 1 -> 24L * 60 * 60 * 1000L // 24 hours
+                    declineCount == 2 -> 72L * 60 * 60 * 1000L // 3 days
+                    else -> 7L * 24 * 60 * 60 * 1000L // 7 days
+                }
+
+                val timeElapsed = System.currentTimeMillis() - mostRecentDeclinedAt
+                if (timeElapsed < cooldown) {
+                    val errorCode = when {
+                        declineCount <= 1 -> "Cooldown: 1"
+                        declineCount == 2 -> "Cooldown: 2"
+                        else -> "Cooldown: 3"
+                    }
+                    return Result.failure(Exception(errorCode))
+                }
             }
 
             db.runTransaction { transaction ->
@@ -118,6 +167,9 @@ class FamilyConnectionRepository {
             return@callbackFlow
         }
         
+        // Trigger non-blocking, throttled background self-healing reconciliation task
+        triggerReconciliation(userId, this)
+
         trySend(ResourceState.Loading)
         val listener = db.collection("connections")
             .whereEqualTo("receiverId", userId)
@@ -369,11 +421,16 @@ class FamilyConnectionRepository {
             ?: return Result.failure(Exception("Not authenticated"))
 
         return try {
-            android.util.Log.i("FamilyConnectionRepo", "Declining request $requestId by user $currentUid")
-            db.collection("connections").document(requestId).delete().await()
+            android.util.Log.i("FamilyConnectionRepo", "Soft-declining request $requestId by user $currentUid")
+            db.collection("connections").document(requestId).update(
+                mapOf(
+                    "status" to "declined",
+                    "declinedAt" to System.currentTimeMillis()
+                )
+            ).await()
             Result.success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("FamilyConnectionRepo", "Error declining request $requestId", e)
+            android.util.Log.e("FamilyConnectionRepo", "Error soft-declining request $requestId", e)
             Result.failure(e)
         }
     }
@@ -823,6 +880,161 @@ class FamilyConnectionRepository {
         } catch (e: Exception) {
             android.util.Log.e("FamilyConnectionRepo", "Error disconnecting member $targetUserId", e)
         }
+    }
+
+    /**
+     * Session-Throttled Background Reconciliation System (Self-Healing)
+     */
+    suspend fun reconcileCaregiverState(userId: String) {
+        val startTime = System.currentTimeMillis()
+        android.util.Log.i("CaregiverTelemetry", "[Reconciliation Start] User: $userId")
+        
+        try {
+            // 1. Fetch pending requests involving this user (both incoming and outgoing)
+            val incomingPending = db.collection("connections")
+                .whereEqualTo("receiverId", userId)
+                .whereEqualTo("status", "pending")
+                .get()
+                .await()
+                .documents
+
+            val outgoingPending = db.collection("connections")
+                .whereEqualTo("senderId", userId)
+                .whereEqualTo("status", "pending")
+                .get()
+                .await()
+                .documents
+
+            val allPending = (incomingPending + outgoingPending).distinctBy { it.id }
+            if (allPending.isEmpty()) {
+                android.util.Log.i("CaregiverTelemetry", "[Reconciliation End] No pending requests to reconcile. Completed in ${System.currentTimeMillis() - startTime}ms")
+                return
+            }
+
+            var healedCount = 0
+            var duplicateCount = 0
+            var orphanCount = 0
+            var selfPurgeCount = 0
+
+            // Group pending requests by sorted sender-receiver pair key
+            val uniquePendingPairs = mutableMapOf<String, MutableList<com.google.firebase.firestore.DocumentSnapshot>>()
+            allPending.forEach { doc ->
+                val s = doc.getString("senderId") ?: ""
+                val r = doc.getString("receiverId") ?: ""
+                if (s.isNotEmpty() && r.isNotEmpty()) {
+                    val pairKey = if (s < r) "${s}_${r}" else "${r}_${s}"
+                    uniquePendingPairs.getOrPut(pairKey) { mutableListOf() }.add(doc)
+                }
+            }
+
+            // Pre-fetch active connection document state and user profile presence in parallel
+            val pairKeys = uniquePendingPairs.keys.toList()
+            val activeConnTasks = pairKeys.map { key ->
+                key to db.collection("active_connections").document(key).get()
+            }
+            val activeConns = activeConnTasks.map { (key, task) ->
+                key to task.await()
+            }.toMap()
+
+            val userIdsToCheck = uniquePendingPairs.flatMap { (_, docs) ->
+                val s = docs.first().getString("senderId") ?: ""
+                val r = docs.first().getString("receiverId") ?: ""
+                listOf(s, r)
+            }.filter { it.isNotEmpty() }.toSet()
+
+            val userTasks = userIdsToCheck.map { uid ->
+                uid to db.collection("users").document(uid).get()
+            }
+            val usersExistMap = userTasks.map { (uid, task) ->
+                uid to task.await().exists()
+            }.toMap()
+
+            // Run atomic write batch cleanup
+            db.runBatch { batch ->
+                uniquePendingPairs.forEach { (pairKey, docs) ->
+                    val senderId = docs.first().getString("senderId") ?: ""
+                    val receiverId = docs.first().getString("receiverId") ?: ""
+
+                    // 1. Self-referential purge
+                    if (senderId == receiverId) {
+                        docs.forEach { doc ->
+                            batch.delete(doc.reference)
+                            selfPurgeCount++
+                        }
+                        return@forEach
+                    }
+
+                    // 2. Orphaned request purge (if sender or receiver doesn't exist)
+                    val senderExists = usersExistMap[senderId] ?: false
+                    val receiverExists = usersExistMap[receiverId] ?: false
+                    if (!senderExists || !receiverExists) {
+                        docs.forEach { doc ->
+                            batch.delete(doc.reference)
+                            orphanCount++
+                        }
+                        return@forEach
+                    }
+
+                    // 3. Interrupted state healing
+                    val activeConnExists = activeConns[pairKey]?.exists() ?: false
+                    if (activeConnExists) {
+                        docs.forEach { doc ->
+                            batch.update(doc.reference, "status", "accepted")
+                            healedCount++
+                        }
+                        return@forEach
+                    }
+
+                    // 4. Deduplication (keep newest, delete duplicates)
+                    if (docs.size > 1) {
+                        val sorted = docs.sortedByDescending { doc ->
+                            doc.getLong("timestamp") ?: 0L
+                        }
+                        val newest = sorted.first()
+                        val duplicates = sorted.drop(1)
+                        duplicates.forEach { doc ->
+                            batch.delete(doc.reference)
+                            duplicateCount++
+                        }
+                    }
+                }
+            }.await()
+
+            val duration = System.currentTimeMillis() - startTime
+            android.util.Log.i(
+                "CaregiverTelemetry",
+                "[Reconciliation End] Completed in ${duration}ms | Healed: $healedCount | Duplicates Removed: $duplicateCount | Orphans Removed: $orphanCount | Self-referential Purged: $selfPurgeCount"
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("CaregiverTelemetry", "Error executing reconcileCaregiverState", e)
+            throw e
+        }
+    }
+
+    /**
+     * Session-Throttling Guard Wrapper to launch reconciliation once-per-session per user
+     */
+    fun triggerReconciliation(userId: String, coroutineScope: kotlinx.coroutines.CoroutineScope) {
+        synchronized(reconciledUsers) {
+            if (reconciledUsers.contains(userId)) return
+            reconciledUsers.add(userId)
+        }
+        
+        coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                reconcileCaregiverState(userId)
+            } catch (e: Exception) {
+                android.util.Log.e("CaregiverTelemetry", "Reconciliation failed for user: $userId. Removing from cache to allow retry.", e)
+                synchronized(reconciledUsers) {
+                    reconciledUsers.remove(userId)
+                }
+            }
+        }
+    }
+
+    companion object {
+        // Thread-safe session tracker
+        private val reconciledUsers = java.util.Collections.synchronizedSet(mutableSetOf<String>())
     }
 }
 
