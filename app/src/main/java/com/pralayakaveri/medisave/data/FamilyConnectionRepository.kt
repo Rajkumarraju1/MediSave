@@ -67,10 +67,13 @@ class FamilyConnectionRepository {
             return Result.failure(Exception("You cannot connect to yourself"))
         }
 
-        android.util.Log.d("FamilyConnectionRepo", "Sending connection request from $senderId to $receiverId (relation: $relation)")
-
         val connectionId = listOf(senderId, receiverId).sorted().joinToString("_")
         val activeConnRef = db.collection("active_connections").document(connectionId)
+
+        android.util.Log.i(
+            "CaregiverTelemetry",
+            "[sendRequest Pre-flight] auth.uid: $senderId | senderId: $senderId | receiverId: $receiverId | relation: $relation | status: pending | timestamp: ${System.currentTimeMillis()} | notified: false | handledBySender: false | active_connections path: active_connections/$connectionId"
+        )
 
         return try {
             // Validate that the receiverId exists in the Firestore users collection
@@ -906,8 +909,21 @@ class FamilyConnectionRepository {
                 .documents
 
             val allPending = (incomingPending + outgoingPending).distinctBy { it.id }
-            if (allPending.isEmpty()) {
-                android.util.Log.i("CaregiverTelemetry", "[Reconciliation End] No pending requests to reconcile. Completed in ${System.currentTimeMillis() - startTime}ms")
+
+            // 2. Fetch active connections involving this user
+            val activeConnections = db.collection("active_connections")
+                .where(
+                    Filter.or(
+                        Filter.equalTo("userA", userId),
+                        Filter.equalTo("userB", userId)
+                    )
+                )
+                .get()
+                .await()
+                .documents
+
+            if (allPending.isEmpty() && activeConnections.isEmpty()) {
+                android.util.Log.i("CaregiverTelemetry", "[Reconciliation End] No pending requests or active connections to reconcile. Completed in ${System.currentTimeMillis() - startTime}ms")
                 return
             }
 
@@ -915,6 +931,7 @@ class FamilyConnectionRepository {
             var duplicateCount = 0
             var orphanCount = 0
             var selfPurgeCount = 0
+            var staleConnectionCount = 0
 
             // Group pending requests by sorted sender-receiver pair key
             val uniquePendingPairs = mutableMapOf<String, MutableList<com.google.firebase.firestore.DocumentSnapshot>>()
@@ -936,11 +953,20 @@ class FamilyConnectionRepository {
                 key to task.await()
             }.toMap()
 
-            val userIdsToCheck = uniquePendingPairs.flatMap { (_, docs) ->
+            // Collect all user IDs to verify existence (senders, receivers, and connected members)
+            val pendingUserIds = uniquePendingPairs.flatMap { (_, docs) ->
                 val s = docs.first().getString("senderId") ?: ""
                 val r = docs.first().getString("receiverId") ?: ""
                 listOf(s, r)
-            }.filter { it.isNotEmpty() }.toSet()
+            }
+            
+            val activeMemberIds = activeConnections.mapNotNull { doc ->
+                val uA = doc.getString("userA") ?: ""
+                val uB = doc.getString("userB") ?: ""
+                if (uA == userId) uB else if (uB == userId) uA else null
+            }
+
+            val userIdsToCheck = (pendingUserIds + activeMemberIds).filter { it.isNotEmpty() }.toSet()
 
             val userTasks = userIdsToCheck.map { uid ->
                 uid to db.collection("users").document(uid).get()
@@ -951,6 +977,7 @@ class FamilyConnectionRepository {
 
             // Run atomic write batch cleanup
             db.runBatch { batch ->
+                // A. Reconcile Pending Requests
                 uniquePendingPairs.forEach { (pairKey, docs) ->
                     val senderId = docs.first().getString("senderId") ?: ""
                     val receiverId = docs.first().getString("receiverId") ?: ""
@@ -998,12 +1025,24 @@ class FamilyConnectionRepository {
                         }
                     }
                 }
+
+                // B. Reconcile Active Connections (Delete stale entries where other user doesn't exist)
+                activeConnections.forEach { doc ->
+                    val uA = doc.getString("userA") ?: ""
+                    val uB = doc.getString("userB") ?: ""
+                    val otherId = if (uA == userId) uB else uA
+                    val otherExists = usersExistMap[otherId] ?: false
+                    if (!otherExists) {
+                        batch.delete(doc.reference)
+                        staleConnectionCount++
+                    }
+                }
             }.await()
 
             val duration = System.currentTimeMillis() - startTime
             android.util.Log.i(
                 "CaregiverTelemetry",
-                "[Reconciliation End] Completed in ${duration}ms | Healed: $healedCount | Duplicates Removed: $duplicateCount | Orphans Removed: $orphanCount | Self-referential Purged: $selfPurgeCount"
+                "[Reconciliation End] Completed in ${duration}ms | Healed: $healedCount | Duplicates Removed: $duplicateCount | Orphans Removed: $orphanCount | Self-referential Purged: $selfPurgeCount | Stale Connections Purged: $staleConnectionCount"
             )
         } catch (e: Exception) {
             android.util.Log.e("CaregiverTelemetry", "Error executing reconcileCaregiverState", e)

@@ -49,10 +49,10 @@ service cloud.firestore {
       // • Why hasOnly exists: Strict field whitelisting. It prevents malicious clients from injecting 
       //   arbitrary properties or unauthorized metadata that could bypass application logic or lead to privilege escalation.
       allow create: if request.auth != null && 
-        request.auth.uid == request.resource.data.senderId &&
-        !isConnected(request.resource.data.senderId, request.resource.data.receiverId) &&
-        request.resource.data.keys().hasAll(['senderId', 'receiverId', 'relation', 'status', 'timestamp', 'notified', 'handledBySender']) &&
-        request.resource.data.keys().hasOnly(['senderId', 'receiverId', 'relation', 'status', 'timestamp', 'notified', 'handledBySender', 'labels']);
+        debug(request.auth.uid == request.resource.data.senderId) &&
+        debug(!isConnected(request.resource.data.senderId, request.resource.data.receiverId)) &&
+        debug(request.resource.data.keys().hasAll(['senderId', 'receiverId', 'relation', 'status', 'timestamp', 'notified', 'handledBySender'])) &&
+        debug(request.resource.data.keys().hasOnly(['senderId', 'receiverId', 'relation', 'status', 'timestamp', 'notified', 'handledBySender', 'labels', 'declinedAt']));
       
       // Only the sender or receiver can update or delete, and critical fields (senderId, receiverId) are immutable.
       // Repeat hasAll() and hasOnly() checks to ensure update payload does not introduce unexpected fields or strip required ones.
@@ -61,7 +61,7 @@ service cloud.firestore {
         request.resource.data.senderId == resource.data.senderId &&
         request.resource.data.receiverId == resource.data.receiverId &&
         request.resource.data.keys().hasAll(['senderId', 'receiverId', 'relation', 'status', 'timestamp', 'notified', 'handledBySender']) &&
-        request.resource.data.keys().hasOnly(['senderId', 'receiverId', 'relation', 'status', 'timestamp', 'notified', 'handledBySender', 'labels']);
+        request.resource.data.keys().hasOnly(['senderId', 'receiverId', 'relation', 'status', 'timestamp', 'notified', 'handledBySender', 'labels', 'declinedAt']);
         
       allow delete: if request.auth != null && 
         (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
@@ -71,7 +71,7 @@ service cloud.firestore {
     match /active_connections/{connId} {
       // Split read, create, update, delete with validation
       allow get: if request.auth != null && 
-        (request.auth.uid == resource.data.userA || request.auth.uid == resource.data.userB);
+        (connId.split('_')[0] == request.auth.uid || connId.split('_')[1] == request.auth.uid);
       allow list: if request.auth != null && 
         (request.auth.uid == resource.data.userA || request.auth.uid == resource.data.userB);
       
