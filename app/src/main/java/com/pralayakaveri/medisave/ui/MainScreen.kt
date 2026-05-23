@@ -41,7 +41,7 @@ sealed class NavRoute(val route: String, val title: String, val icon: androidx.c
     object Login : NavRoute("login", "Login", Icons.Default.Login)
     object Register : NavRoute("register", "Register", Icons.Default.AppRegistration)
     object Splash : NavRoute("splash", "Splash", Icons.Default.CloudQueue)
-    object MemberDetail : NavRoute("member_detail/{memberId}/{memberName}?connectionId={connectionId}", "Member Detail", Icons.Default.Person)
+    object MemberDetail : NavRoute("member_detail/{memberId}/{memberName}?connectionId={connectionId}&medicineId={medicineId}", "Member Detail", Icons.Default.Person)
     object ConnectionCode : NavRoute("connection_code", "My Code", Icons.Default.QrCode)
     object Account : NavRoute("account", "Account", Icons.Default.AccountCircle)
     object FamilyConnection : NavRoute("family_connection", "Connection", Icons.Default.Share)
@@ -68,6 +68,7 @@ fun MainScreen(
     deepLinkSenderId: String? = null,
     deepLinkPatientId: String? = null,
     deepLinkPatientName: String? = null,
+    deepLinkMedicineId: String? = null,
     deepLinkReceiverId: String? = null,
     deepLinkRelation: String? = null,
     onDeepLinkConsumed: () -> Unit = {},
@@ -81,26 +82,49 @@ fun MainScreen(
     val currentRoute = navBackStackEntry?.destination?.route
     
     // FCM INTENT MERGE: Mark deep-link request as handled to avoid duplicate trigger
-    LaunchedEffect(deepLinkRequestId) {
-        if (deepLinkRequestId != null) {
+    LaunchedEffect(deepLinkRequestId, authState, currentRoute) {
+        if (deepLinkRequestId != null && 
+            authState is AuthState.Authenticated && 
+            currentRoute != NavRoute.Splash.route &&
+            currentRoute != NavRoute.Login.route &&
+            currentRoute != NavRoute.Register.route
+        ) {
             authViewModel.markRequestHandled(deepLinkRequestId)
             onDeepLinkConsumed()
-            navController.navigate("connection_request/$deepLinkRequestId/$deepLinkSenderId")
+            navController.navigate("connection_request/$deepLinkRequestId/$deepLinkSenderId") {
+                launchSingleTop = true
+            }
         }
     }
 
-    LaunchedEffect(deepLinkPatientId) {
-        if (deepLinkPatientId != null && authState is AuthState.Authenticated) {
+    LaunchedEffect(deepLinkPatientId, authState, currentRoute) {
+        if (deepLinkPatientId != null && 
+            authState is AuthState.Authenticated && 
+            currentRoute != NavRoute.Splash.route &&
+            currentRoute != NavRoute.Login.route &&
+            currentRoute != NavRoute.Register.route
+        ) {
+            val encodedName = android.net.Uri.encode(deepLinkPatientName ?: "")
+            val medParam = if (deepLinkMedicineId != null) "&medicineId=$deepLinkMedicineId" else ""
             onDeepLinkConsumed()
-            navController.navigate("member_detail/$deepLinkPatientId/$deepLinkPatientName")
+            navController.navigate("member_detail/$deepLinkPatientId/$encodedName$medParam") {
+                launchSingleTop = true
+            }
         }
     }
 
-    LaunchedEffect(deepLinkReceiverId) {
-        if (deepLinkReceiverId != null && authState is AuthState.Authenticated) {
+    LaunchedEffect(deepLinkReceiverId, authState, currentRoute) {
+        if (deepLinkReceiverId != null && 
+            authState is AuthState.Authenticated && 
+            currentRoute != NavRoute.Splash.route &&
+            currentRoute != NavRoute.Login.route &&
+            currentRoute != NavRoute.Register.route
+        ) {
             val reqId = deepLinkRequestId ?: "fcm_accepted"
             onDeepLinkConsumed()
-            navController.navigate("connection_success/$reqId/$deepLinkReceiverId/$deepLinkRelation")
+            navController.navigate("connection_success/$reqId/$deepLinkReceiverId/$deepLinkRelation") {
+                launchSingleTop = true
+            }
         }
     }
 
@@ -255,16 +279,23 @@ fun MainScreen(
                         type = androidx.navigation.NavType.StringType
                         nullable = true
                         defaultValue = null
+                    },
+                    navArgument("medicineId") {
+                        type = androidx.navigation.NavType.StringType
+                        nullable = true
+                        defaultValue = null
                     }
                 )
             ) { backStackEntry ->
                 val memberId = backStackEntry.arguments?.getString("memberId") ?: ""
                 val memberName = backStackEntry.arguments?.getString("memberName") ?: ""
                 val connectionId = backStackEntry.arguments?.getString("connectionId") ?: ""
+                val medicineId = backStackEntry.arguments?.getString("medicineId")
                 MemberDetailScreen(
                     memberId = memberId,
                     memberName = memberName,
                     connectionId = connectionId,
+                    highlightedMedicineId = medicineId,
                     onBack = { navController.popBackStack() }
                 )
             }

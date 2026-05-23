@@ -48,6 +48,7 @@ class MainActivity : AppCompatActivity() {
     private val deepLinkSenderId = mutableStateOf<String?>(null)
     private val deepLinkPatientId = mutableStateOf<String?>(null)
     private val deepLinkPatientName = mutableStateOf<String?>(null)
+    private val deepLinkMedicineId = mutableStateOf<String?>(null)
     private val deepLinkReceiverId = mutableStateOf<String?>(null)
     private val deepLinkRelation = mutableStateOf<String?>(null)
 
@@ -124,6 +125,7 @@ class MainActivity : AppCompatActivity() {
                     deepLinkSenderId = deepLinkSenderId.value,
                     deepLinkPatientId = deepLinkPatientId.value,
                     deepLinkPatientName = deepLinkPatientName.value,
+                    deepLinkMedicineId = deepLinkMedicineId.value,
                     deepLinkReceiverId = deepLinkReceiverId.value,
                     deepLinkRelation = deepLinkRelation.value,
                     onDeepLinkConsumed = {
@@ -131,6 +133,7 @@ class MainActivity : AppCompatActivity() {
                         deepLinkSenderId.value = null
                         deepLinkPatientId.value = null
                         deepLinkPatientName.value = null
+                        deepLinkMedicineId.value = null
                         deepLinkReceiverId.value = null
                         deepLinkRelation.value = null
                     }
@@ -158,6 +161,14 @@ class MainActivity : AppCompatActivity() {
         if (patientId != null && patientName != null) {
             deepLinkPatientId.value = patientId
             deepLinkPatientName.value = patientName
+        }
+
+        val logId = intent?.getStringExtra("logId")
+        if (logId != null) {
+            val parts = logId.split("_")
+            if (parts.size >= 4) {
+                deepLinkMedicineId.value = parts[1]
+            }
         }
 
         val receiverId = intent?.getStringExtra("receiverId")

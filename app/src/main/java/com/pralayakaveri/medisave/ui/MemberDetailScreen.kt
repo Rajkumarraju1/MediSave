@@ -421,6 +421,7 @@ fun MemberDetailScreen(
     memberId: String,
     memberName: String,
     connectionId: String,
+    highlightedMedicineId: String? = null,
     onBack: () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current.applicationContext as Application
@@ -495,6 +496,27 @@ fun MemberDetailScreen(
                     val listState = rememberLazyListState()
                     val coroutineScope = rememberCoroutineScope()
                     var highlightedMedId by remember { mutableStateOf<String?>(null) }
+
+                    LaunchedEffect(highlightedMedicineId, state) {
+                        if (highlightedMedicineId != null) {
+                            val targetIndex = state.todayTimeline.indexOfFirst { it.medId == highlightedMedicineId }
+                            if (targetIndex != -1) {
+                                highlightedMedId = highlightedMedicineId
+                                
+                                // Compute scroll offset dynamically and resiliently
+                                var bannerOffset = 0
+                                if (state.isStartingToday) bannerOffset++
+                                if (!state.isGlobalAlertsEnabled) bannerOffset++
+                                if (state.hasStockAlert) bannerOffset++
+                                if (state.lastMissedDose != null) bannerOffset++
+                                bannerOffset++ // for ScheduleHeader
+                                
+                                listState.animateScrollToItem(bannerOffset)
+                                kotlinx.coroutines.delay(3000)
+                                highlightedMedId = null
+                            }
+                        }
+                    }
 
                     Column(modifier = Modifier.fillMaxSize()) {
                         HeaderWithStats(
