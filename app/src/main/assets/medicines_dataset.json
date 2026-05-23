@@ -1,0 +1,68 @@
+[
+  {
+    "brand_name": "Crocin Advance 500mg",
+    "salt_composition": "Paracetamol",
+    "price": 20.0,
+    "manufacturer": "GSK"
+  },
+  {
+    "brand_name": "Dolo 650",
+    "salt_composition": "Paracetamol",
+    "price": 30.0,
+    "manufacturer": "Micro Labs"
+  },
+  {
+    "brand_name": "Paracip 500mg",
+    "salt_composition": "Paracetamol",
+    "price": 10.0,
+    "manufacturer": "Cipla"
+  },
+  {
+    "brand_name": "Jan Aushadhi Paracetamol 500mg",
+    "salt_composition": "Paracetamol",
+    "price": 5.0,
+    "manufacturer": "BPPI"
+  },
+  {
+    "brand_name": "Lipitor 10mg",
+    "salt_composition": "Atorvastatin",
+    "price": 180.0,
+    "manufacturer": "Pfizer"
+  },
+  {
+    "brand_name": "Atorva 10",
+    "salt_composition": "Atorvastatin",
+    "price": 65.0,
+    "manufacturer": "Zydus"
+  },
+  {
+    "brand_name": "Storvas 10",
+    "salt_composition": "Atorvastatin",
+    "price": 120.0,
+    "manufacturer": "Sun Pharma"
+  },
+  {
+    "brand_name": "Jan Aushadhi Atorvastatin 10mg",
+    "salt_composition": "Atorvastatin",
+    "price": 15.0,
+    "manufacturer": "BPPI"
+  },
+  {
+    "brand_name": "Augmentin 625 Duo Tablet",
+    "salt_composition": "Amoxicillin + Clavulanic Acid",
+    "price": 200.0,
+    "manufacturer": "GSK"
+  },
+  {
+    "brand_name": "Moxikind-CV 625 Tablet",
+    "salt_composition": "Amoxicillin + Clavulanic Acid",
+    "price": 150.0,
+    "manufacturer": "Mankind"
+  },
+  {
+    "brand_name": "Jan Aushadhi Amoxicillin Clavulanate",
+    "salt_composition": "Amoxicillin + Clavulanic Acid",
+    "price": 60.0,
+    "manufacturer": "BPPI"
+  }
+]

@@ -1,0 +1,65 @@
+package com.pralayakaveri.medisave.ui
+
+import android.app.Application
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pralayakaveri.medisave.data.AppDatabase
+import com.pralayakaveri.medisave.data.FamilyConnectionRepository
+import com.pralayakaveri.medisave.data.MedicineRepository
+import com.pralayakaveri.medisave.model.*
+import com.pralayakaveri.medisave.ui.theme.*
+import com.pralayakaveri.medisave.util.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
+import java.text.SimpleDateFormat
+import java.util.*
+
+sealed class MemberDetailUiState {
+    object Loading : MemberDetailUiState()
+    data class Success(
+        val name: String,
+        val relation: String,
+        val type: MemberType,
+        val adherence: Int,
+        val adherenceLabel: String = "",
+        val todayDoses: Int,
+        val missedWk: Int,
+        val lastMissedDose: TimelineItem? = null,
+        val isLive: Boolean = false,
+        val isStartingToday: Boolean = false,
+        val lastSyncedText: String = "",
+        val lastActiveAt: com.google.firebase.Timestamp? = null,
+        val todayTimeline: List<TimelineItem>,
+        val weeklyAdherence: List<DailyAdherence> = emptyList(),
+        val connectionId: String = ""
+    ) : MemberDetailUiState()
+    object Error : MemberDetailUiState() {
+        data class Message(val message: String) : MemberDetailUiState()
+    }
+}

@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper: Check if two users have an active caregiver/family connection
+    function isConnected(uid1, uid2) {
+      // The app generates connection IDs by sorting UIDs alphabetically: uid1_uid2
+      let connId = uid1 < uid2 ? uid1 + "_" + uid2 : uid2 + "_" + uid1;
+      return exists(/databases/$(database)/documents/active_connections/$(connId));
+    }
+
+    // 1. User Profiles
+    match /users/{userId} {
+      // Allow authenticated users to get profiles (needed for finding family by code/UID)
+      allow get: if request.auth != null;
+      allow list: if request.auth != null;
+      
+      // Users can only manage their own profile
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+      
+      // 2. Medicines Subcollection
+      match /medicines/{medicineId} {
+        // Users can read their own medicines, OR if they are a caregiver for this user
+        allow get: if request.auth != null && (request.auth.uid == userId || isConnected(request.auth.uid, userId));
+        allow list: if request.auth != null && (request.auth.uid == userId || isConnected(request.auth.uid, userId));
+        
+        // Only the owner can add/edit/delete their medicines
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // 3. Connection Requests
+    match /connections/{requestId} {
+      // Split read, update, delete into granular rules
+      allow get: if request.auth != null && 
+        (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
+      allow list: if request.auth != null && 
+        (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
+      
+      // Only the sender can create a connection request.
+      // Inline Comments documenting security rules:
+      // • Why hasAll exists: Enforces structural completeness. It guarantees that all mandatory fields 
+      //   ('senderId', 'receiverId', 'relation', 'status', 'timestamp', 'notified', 'handledBySender') 
+      //   must be present, preventing clients from submitting broken or partial documents that could crash clients.
+      // • Why hasOnly exists: Strict field whitelisting. It prevents malicious clients from injecting 
+      //   arbitrary properties or unauthorized metadata that could bypass application logic or lead to privilege escalation.
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.senderId &&
+        request.resource.data.keys().hasAll(['senderId', 'receiverId', 'relation', 'status', 'timestamp', 'notified', 'handledBySender']) &&
+        request.resource.data.keys().hasOnly(['senderId', 'receiverId', 'relation', 'status', 'timestamp', 'notified', 'handledBySender', 'labels']);
+      
+      // Only the sender or receiver can update or delete, and critical fields (senderId, receiverId) are immutable.
+      // Repeat hasAll() and hasOnly() checks to ensure update payload does not introduce unexpected fields or strip required ones.
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId) &&
+        request.resource.data.senderId == resource.data.senderId &&
+        request.resource.data.receiverId == resource.data.receiverId &&
+        request.resource.data.keys().hasAll(['senderId', 'receiverId', 'relation', 'status', 'timestamp', 'notified', 'handledBySender']) &&
+        request.resource.data.keys().hasOnly(['senderId', 'receiverId', 'relation', 'status', 'timestamp', 'notified', 'handledBySender', 'labels']);
+        
+      allow delete: if request.auth != null && 
+        (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
+    }
+
+    // 4. Established Active Connections
+    match /active_connections/{connId} {
+      // Split read, create, update, delete with validation
+      allow get: if request.auth != null && 
+        (request.auth.uid == resource.data.userA || request.auth.uid == resource.data.userB);
+      allow list: if request.auth != null && 
+        (request.auth.uid == resource.data.userA || request.auth.uid == resource.data.userB);
+      
+      // Establish active connections.
+      // Inline Comments documenting security rules:
+      // • Why alphabetical connId enforcement matters: It enforces a unique, canonical connection ID format 
+      //   (userA_userB where userA < userB). This acts as a database-level constraint that guarantees exactly ONE 
+      //   connection document can ever exist between any two users. It prevents duplicate or out-of-order 
+      //   connection records and prevents race conditions or spoofing connection states.
+      // • Why hasAll exists: Ensures structural integrity on creation. The document must define ('userA', 'userB', 'relation', 'labels', 'acceptedAt').
+      // • Why hasOnly exists: Enforces whitelisting, preventing parameter abuse or custom field injection.
+      allow create: if request.auth != null &&
+        (request.auth.uid == request.resource.data.userA || request.auth.uid == request.resource.data.userB) &&
+        connId == (request.resource.data.userA < request.resource.data.userB ? 
+          request.resource.data.userA + "_" + request.resource.data.userB : 
+          request.resource.data.userB + "_" + request.resource.data.userA) &&
+        request.resource.data.keys().hasAll(['userA', 'userB', 'relation', 'labels', 'acceptedAt']) &&
+        request.resource.data.keys().hasOnly(['userA', 'userB', 'relation', 'labels', 'acceptedAt']);
+          
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.userA || request.auth.uid == resource.data.userB) &&
+        request.resource.data.userA == resource.data.userA &&
+        request.resource.data.userB == resource.data.userB &&
+        request.resource.data.keys().hasAll(['userA', 'userB', 'relation', 'labels', 'acceptedAt']) &&
+        request.resource.data.keys().hasOnly(['userA', 'userB', 'relation', 'labels', 'acceptedAt']);
+        
+      allow delete: if request.auth != null && 
+        (request.auth.uid == resource.data.userA || request.auth.uid == resource.data.userB);
+    }
+
+    // 5. Dose Logs (Flat and Date-based subcollections)
+    match /doseLogs/{userId}/{subCollection}/{logId} {
+      // Users can read their own logs, OR if they are a caregiver for this user
+      allow get: if request.auth != null && (request.auth.uid == userId || isConnected(request.auth.uid, userId));
+      allow list: if request.auth != null && (request.auth.uid == userId || isConnected(request.auth.uid, userId));
+      
+      // Only the owner can write logs
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

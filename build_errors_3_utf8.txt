@@ -1,0 +1,74 @@
+﻿> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:processDebugGoogleServices UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:kspDebugKotlin UP-TO-DATE
+
+./gradlew : e: file:///C:/Users/Lenovo/AndroidStudioProjects/MediSave/
+app/src/main/java/com/pralayakaveri/medisave/ui/DashboardScreen.kt:234
+:37 Unresolved reference 'animateFloat'.
+At line:1 char:1
++ ./gradlew :app:compileDebugKotlin --console=plain 2>&1 | tee 
+build_er ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (e: file:///C:/U...'anima 
+   teFloat'.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+> Task :app:compileDebugKotlin FAILED
+e: file:///C:/Users/Lenovo/AndroidStudioProjects/MediSave/app/src/main
+/java/com/pralayakaveri/medisave/ui/DashboardScreen.kt:237:57 Cannot 
+infer type for this parameter. Please specify it explicitly.
+e: file:///C:/Users/Lenovo/AndroidStudioProjects/MediSave/app/src/main
+/java/com/pralayakaveri/medisave/ui/DashboardScreen.kt:238:57 Cannot 
+infer type for this parameter. Please specify it explicitly.
+e: file:///C:/Users/Lenovo/AndroidStudioProjects/MediSave/app/src/main
+/java/com/pralayakaveri/medisave/ui/DashboardScreen.kt:244:29 
+Unresolved reference 'graphicsLayer'.
+e: file:///C:/Users/Lenovo/AndroidStudioProjects/MediSave/app/src/main
+/java/com/pralayakaveri/medisave/ui/DashboardScreen.kt:246:17 
+Unresolved reference 'scaleX'.
+e: file:///C:/Users/Lenovo/AndroidStudioProjects/MediSave/app/src/main
+/java/com/pralayakaveri/medisave/ui/DashboardScreen.kt:247:17 
+Unresolved reference 'scaleY'.
+e: file:///C:/Users/Lenovo/AndroidStudioProjects/MediSave/app/src/main
+/java/com/pralayakaveri/medisave/ui/FindGenericScreen.kt:169:44 
+Expression 'weight' of type 'kotlin.Float' cannot be invoked as a 
+function. Function 'invoke()' is not found.
+e: file:///C:/Users/Lenovo/AndroidStudioProjects/MediSave/app/src/main
+/java/com/pralayakaveri/medisave/ui/MapScreen.kt:116:57 This is an 
+experimental animation API.
+e: file:///C:/Users/Lenovo/AndroidStudioProjects/MediSave/app/src/main
+/java/com/pralayakaveri/medisave/ui/MapScreen.kt:118:58 This is an 
+experimental animation API.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunn
+er.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 22s
+17 actionable tasks: 1 executed, 16 up-to-date

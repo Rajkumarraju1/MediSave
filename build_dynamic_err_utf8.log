@@ -1,0 +1,46 @@
+﻿./gradlew : e: file:///C:/Users/Lenovo/AndroidStudioProjects/MediSave/
+app/src/main/java/com/pralayakaveri/medisave/ui/HomeScreen.kt:118:20 
+Unresolved reference 'Calendar'.
+At line:1 char:1
++ ./gradlew :app:assembleDebug -q --console=plain > 
+build_dynamic_err.l ...
++ 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (e: file:///C:/U...nce 'C 
+   alendar'.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+e: file:///C:/Users/Lenovo/AndroidStudioProjects/MediSave/app/src/main
+/java/com/pralayakaveri/medisave/ui/HomeScreen.kt:119:29 Unresolved 
+reference 'Calendar'.
+e: file:///C:/Users/Lenovo/AndroidStudioProjects/MediSave/app/src/main
+/java/com/pralayakaveri/medisave/ui/HomeScreen.kt:122:9 Type 
+inference failed. The value of the type parameter 'T' should be 
+mentioned in input types (argument types, receiver type, or expected 
+type). Try to specify it explicitly.
+e: file:///C:/Users/Lenovo/AndroidStudioProjects/MediSave/app/src/main
+/java/com/pralayakaveri/medisave/ui/HomeScreen.kt:123:9 Type 
+inference failed. The value of the type parameter 'T' should be 
+mentioned in input types (argument types, receiver type, or expected 
+type). Try to specify it explicitly.
+e: file:///C:/Users/Lenovo/AndroidStudioProjects/MediSave/app/src/main
+/java/com/pralayakaveri/medisave/ui/HomeScreen.kt:124:9 Type 
+inference failed. The value of the type parameter 'T' should be 
+mentioned in input types (argument types, receiver type, or expected 
+type). Try to specify it explicitly.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunn
+er.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 8s
