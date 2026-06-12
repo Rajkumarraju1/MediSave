@@ -213,22 +213,22 @@
     <div class="container">
         <div class="header-section">
             <h1>Customer Support</h1>
-            <p class="lead">Need help with caregiver connections, reminders, or account deletion? Submit a ticket below or email us directly at <a href="mailto:beatbounce80@gmail.com" style="color: var(--primary-light); text-decoration: none;">beatbounce80@gmail.com</a>.</p>
+            <p class="lead">Need help with caregiver connections, reminders, or account deletion? Submit a ticket below and our support team will get in touch with you.</p>
         </div>
 
         <div class="content-card">
-            <form onsubmit="event.preventDefault(); alert('Thank you! Your query has been submitted. Our support team will get in touch shortly.'); this.reset();">
+            <form id="supportForm" action="https://formsubmit.co/beatbounce80@gmail.com" method="POST">
                 <div class="form-group">
                     <label for="name">Full Name</label>
-                    <input type="text" id="name" required placeholder="e.g. John Doe">
+                    <input type="text" name="name" id="name" required placeholder="e.g. John Doe">
                 </div>
                 <div class="form-group">
                     <label for="email">Email Address</label>
-                    <input type="email" id="email" required placeholder="e.g. john@example.com">
+                    <input type="email" name="email" id="email" required placeholder="e.g. john@example.com">
                 </div>
                 <div class="form-group">
                     <label for="message">What can we help you with?</label>
-                    <textarea id="message" rows="5" required placeholder="Describe your query in detail..."></textarea>
+                    <textarea name="message" id="message" rows="5" required placeholder="Describe your query in detail..."></textarea>
                 </div>
                 <button type="submit" class="submit-btn">Submit Support Request</button>
             </form>
@@ -240,5 +240,38 @@
         <p class="copyright">&copy; 2026 MediSave App. GitHub Pages Production Node.</p>
     </footer>
 
+    <script>
+        document.getElementById('supportForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = this;
+            const button = form.querySelector('.submit-btn');
+            const originalText = button.textContent;
+            button.textContent = 'Submitting...';
+            button.disabled = true;
+
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Thank you! Your query has been submitted. Our support team will get in touch shortly.');
+                    form.reset();
+                } else {
+                    alert('Oops! There was a problem submitting your form. Please try again.');
+                }
+            })
+            .catch(error => {
+                alert('Oops! There was a network error. Please check your connection and try again.');
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        });
+    </script>
 </body>
 </html>
