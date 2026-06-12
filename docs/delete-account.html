@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Deletion Request — MediSave</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1D9E75;
+            --primary-light: #44CBA0;
+            --bg-dark: #0B0F0C;
+            --card-bg: rgba(21, 30, 24, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(29, 158, 117, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(21, 126, 93, 0.12) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        /* Glassmorphic Navbar */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 5%;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(11, 15, 12, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff, var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-light);
+            text-shadow: 0 0 10px rgba(29, 158, 117, 0.3);
+        }
+
+        /* Content Container */
+        .container {
+            max-width: 800px;
+            margin: 4rem auto;
+            padding: 0 5%;
+        }
+
+        .header-section {
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #ffffff, #c7d2fe, var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .lead {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .content-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 3rem;
+            border-radius: 24px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.3);
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem;
+            color: #ffffff;
+        }
+
+        ul {
+            padding-left: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .alert-box {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin: 2rem 0;
+        }
+
+        .alert-box p {
+            color: #fca5a5;
+            font-weight: 500;
+        }
+
+        /* Form styling */
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-main);
+            font-size: 0.95rem;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(11, 15, 12, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.15);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .submit-btn:hover {
+            box-shadow: 0 10px 20px -5px rgba(29, 158, 117, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 8rem;
+            padding: 4rem 5% 3rem;
+            border-top: 1px solid var(--border-color);
+            background: rgba(11, 15, 12, 0.8);
+            text-align: center;
+        }
+
+        .footer-logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 1rem;
+        }
+
+        .copyright {
+            color: #475569;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.2rem; }
+            .content-card { padding: 1.5rem; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="index.html" class="logo"><img src="logo_medisave.png" alt="MediSave Logo" style="height: 36px; vertical-align: middle;">MediSave</a>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="support.html">Support</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="header-section">
+            <h1>Account Deletion Portal</h1>
+            <p class="lead">Submit a request to permanently delete your MediSave account and associated health data.</p>
+        </div>
+
+        <div class="content-card">
+            <h2>Data Deletion & Privacy Policy</h2>
+            <p>At MediSave, we support your right to control your personal data. You can delete your account directly from within the app (go to **Profile** &rarr; **Settings** &rarr; **Account** &rarr; **Delete Account**). If you no longer have the app installed or cannot access your account, you can request permanent deletion using the form below.</p>
+
+            <div class="alert-box">
+                <p><strong>⚠️ Warning:</strong> Account deletion is permanent and irreversible. Once processed, all of your cloud backups, local health reminders, dose logs, and family connections will be permanently destroyed.</p>
+            </div>
+
+            <h2>What data will be deleted?</h2>
+            <ul>
+                <li>Your profile and email details from Firebase Authentication.</li>
+                <li>Your entire cloud document and profile in the Firestore Database.</li>
+                <li>All of your medication reminders and custom slots.</li>
+                <li>Your complete medication adherence logs and historical charts.</li>
+                <li>Active caregiver connections and pending invitations (severing all synchronization).</li>
+                <li>All local SQLite database files and caches on your physical device.</li>
+            </ul>
+
+            <h2>What data is retained?</h2>
+            <p>None. We do not retain any health data, medication histories, or logs after account deletion has been completed.</p>
+        </div>
+
+        <div class="content-card">
+            <h2>Submit a Web Deletion Request</h2>
+            <p style="margin-bottom: 2rem;">Please submit your registered details. We will process your request within 7 business days.</p>
+            
+            <form id="deleteForm" action="https://formsubmit.co/beatbounce80@gmail.com" method="POST">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" name="name" id="name" required placeholder="e.g. John Doe">
+                </div>
+                <div class="form-group">
+                    <label for="email">Registered Email Address</label>
+                    <input type="email" name="email" id="email" required placeholder="e.g. john@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="reason">Reason for deletion (Optional)</label>
+                    <textarea name="reason" id="reason" rows="3" placeholder="Tell us why you want to delete your account..."></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Submit Deletion Request</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-logo"><img src="logo_medisave.png" alt="MediSave Logo" style="height: 32px; vertical-align: middle; margin-right: 8px;">MediSave</div>
+        <p class="copyright">&copy; 2026 MediSave App. GitHub Pages Production Node.</p>
+    </footer>
+
+    <script>
+        document.getElementById('deleteForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = this;
+            const button = form.querySelector('.submit-btn');
+            const originalText = button.textContent;
+            button.textContent = 'Processing...';
+            button.disabled = true;
+
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Thank you! Your account deletion request has been submitted. We will process your deletion and email confirmation within 7 business days.');
+                    form.reset();
+                } else {
+                    alert('Oops! There was a problem submitting your request. Please try again.');
+                }
+            })
+            .catch(error => {
+                alert('Oops! There was a network error. Please check your connection and try again.');
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        });
+    </script>
+</body>
+</html>
