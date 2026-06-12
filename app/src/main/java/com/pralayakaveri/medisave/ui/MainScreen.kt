@@ -29,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pralayakaveri.medisave.ui.theme.CardWhite
 import com.pralayakaveri.medisave.viewmodel.AuthState
+import com.pralayakaveri.medisave.viewmodel.DashboardViewModel
 import kotlinx.coroutines.launch
 
 sealed class NavRoute(val route: String, val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
@@ -105,9 +106,11 @@ fun MainScreen(
             currentRoute != NavRoute.Register.route
         ) {
             val encodedName = android.net.Uri.encode(deepLinkPatientName ?: "")
-            val medParam = if (deepLinkMedicineId != null) "&medicineId=$deepLinkMedicineId" else ""
+            val queryParams = mutableListOf<String>()
+            if (deepLinkMedicineId != null) queryParams.add("medicineId=$deepLinkMedicineId")
+            val queryStr = if (queryParams.isNotEmpty()) "?" + queryParams.joinToString("&") else ""
             onDeepLinkConsumed()
-            navController.navigate("member_detail/$deepLinkPatientId/$encodedName$medParam") {
+            navController.navigate("member_detail/$deepLinkPatientId/$encodedName$queryStr") {
                 launchSingleTop = true
             }
         }
@@ -159,8 +162,7 @@ fun MainScreen(
             if (!isAuthScreen && !isSplashScreen && authState is AuthState.Authenticated && currentRoute != NavRoute.ConnectionRequest.route) {
                 AppBottomNavigation(navController) 
             }
-        },
-        contentWindowInsets = WindowInsets(0.dp) // Important: Allow edge-to-edge drawing
+        }
     ) { paddingValues ->
         NavHost(
             navController = navController,
@@ -229,7 +231,118 @@ fun MainScreen(
                 MapScreen(initialMode = initialMode)
             }
             composable(NavRoute.Dashboard.route) {
-                DashboardScreen()
+                val activity = androidx.compose.ui.platform.LocalContext.current as? androidx.activity.ComponentActivity
+                val dashboardViewModel: DashboardViewModel = if (activity != null) {
+                    viewModel(activity)
+                } else {
+                    viewModel()
+                }
+                DashboardScreen(
+                    viewModel = dashboardViewModel,
+                    onViewDetails = {
+                        navController.navigate("performance_details")
+                    },
+                    onNavigateToHistory = { filter ->
+                        navController.navigate("activity_history?filter=$filter")
+                    },
+                    onNavigateToAchievements = {
+                        navController.navigate("achievements")
+                    },
+                    onNavigateToRiskDetails = {
+                        navController.navigate("adherence_risk_details")
+                    },
+                    onNavigateToRefillStatus = {
+                        navController.navigate("refill_status")
+                    }
+                )
+            }
+            composable("performance_details") {
+                val activity = androidx.compose.ui.platform.LocalContext.current as? androidx.activity.ComponentActivity
+                val dashboardViewModel: DashboardViewModel = if (activity != null) {
+                    viewModel(activity)
+                } else {
+                    viewModel()
+                }
+                PerformanceDetailsScreen(
+                    viewModel = dashboardViewModel,
+                    onBack = { navController.popBackStack() },
+                    onViewAllActivity = {
+                        navController.navigate("activity_history?filter=all")
+                    }
+                )
+            }
+            composable("achievements") {
+                val activity = androidx.compose.ui.platform.LocalContext.current as? androidx.activity.ComponentActivity
+                val dashboardViewModel: DashboardViewModel = if (activity != null) {
+                    viewModel(activity)
+                } else {
+                    viewModel()
+                }
+                AchievementsScreen(
+                    viewModel = dashboardViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("adherence_risk_details") {
+                val activity = androidx.compose.ui.platform.LocalContext.current as? androidx.activity.ComponentActivity
+                val dashboardViewModel: DashboardViewModel = if (activity != null) {
+                    viewModel(activity)
+                } else {
+                    viewModel()
+                }
+                AdherenceRiskDetailsScreen(
+                    viewModel = dashboardViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("refill_status") {
+                val activity = androidx.compose.ui.platform.LocalContext.current as? androidx.activity.ComponentActivity
+                val dashboardViewModel: DashboardViewModel = if (activity != null) {
+                    viewModel(activity)
+                } else {
+                    viewModel()
+                }
+                RefillStatusScreen(
+                    viewModel = dashboardViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(
+                route = "activity_history?filter={filter}",
+                arguments = listOf(navArgument("filter") { defaultValue = "all" })
+            ) { backStackEntry ->
+                val filter = backStackEntry.arguments?.getString("filter") ?: "all"
+                val activity = androidx.compose.ui.platform.LocalContext.current as? androidx.activity.ComponentActivity
+                val dashboardViewModel: DashboardViewModel = if (activity != null) {
+                    viewModel(activity)
+                } else {
+                    viewModel()
+                }
+                ActivityHistoryScreen(
+                    viewModel = dashboardViewModel,
+                    initialFilter = filter,
+                    onBack = { navController.popBackStack() },
+                    onNavigateToDetails = { activityId ->
+                        navController.navigate("activity_details/$activityId")
+                    }
+                )
+            }
+            composable(
+                route = "activity_details/{activityId}",
+                arguments = listOf(navArgument("activityId") { type = androidx.navigation.NavType.StringType })
+            ) { backStackEntry ->
+                val activityId = backStackEntry.arguments?.getString("activityId") ?: ""
+                val activity = androidx.compose.ui.platform.LocalContext.current as? androidx.activity.ComponentActivity
+                val dashboardViewModel: DashboardViewModel = if (activity != null) {
+                    viewModel(activity)
+                } else {
+                    viewModel()
+                }
+                ActivityDetailsScreen(
+                    viewModel = dashboardViewModel,
+                    activityId = activityId,
+                    onBack = { navController.popBackStack() }
+                )
             }
             composable(NavRoute.Profile.route) {
                 ProfileScreen(
@@ -394,7 +507,7 @@ fun AppBottomNavigation(navController: NavHostController) {
         NavigationBar(
             containerColor = Color.Transparent,
             tonalElevation = 0.dp,
-            windowInsets = WindowInsets(0.dp)
+            windowInsets = NavigationBarDefaults.windowInsets
         ) {
             BottomNavItems.forEach { item ->
                 NavigationBarItem(

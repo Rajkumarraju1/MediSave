@@ -207,8 +207,9 @@ class MemberDetailViewModel(
                         // Phase 3: identify low / out-of-stock medicines for caregiver view
                         val lowStock = medicines.filter { it.pillsLeft <= it.refillAt }
                         
+                        val resolvedName = profile?.get("name")?.toString() ?: memberName.split("&", "?").first().trim()
                         MemberDetailUiState.Success(
-                            name = memberName,
+                            name = resolvedName,
                             relation = connection?.relation ?: "Family Member",
                             type = MemberType.CONNECTED,
                             adherence = report.adherencePercentage ?: 0,
@@ -443,6 +444,11 @@ fun MemberDetailScreen(
     val scope = rememberCoroutineScope()
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     var isProcessing by remember { mutableStateOf(false) }
+    
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val DividerGray = if (isDark) MaterialTheme.colorScheme.outline else com.pralayakaveri.medisave.ui.theme.DividerGray
 
     LaunchedEffect(memberId) {
         viewModel.refreshRealtimeLabels()
@@ -457,37 +463,10 @@ fun MemberDetailScreen(
     var showEditLabel by remember { mutableStateOf(false) }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
-            if (uiState is MemberDetailUiState.Success) {
-                val state = uiState as MemberDetailUiState.Success
-                if (state.type == MemberType.CONNECTED) {
-                    DisconnectButtonSection(
-                        isProcessing = isProcessing,
-                        onDisconnect = {
-                            if (!isProcessing) {
-                                isProcessing = true
-                                viewModel.revokeConnection(memberId) {
-                                    scope.launch {
-                                        val result = snackbarHostState.showSnackbar(
-                                            message = "Family member disconnected successfully",
-                                            duration = SnackbarDuration.Short
-                                        )
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        if (result == SnackbarResult.Dismissed || result == SnackbarResult.ActionPerformed) {
-                                            onBack()
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    )
-                }
-            }
-        }
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Box(
-            modifier = Modifier.fillMaxSize().background(Color(0xFFF8F9FA))
+            modifier = Modifier.fillMaxSize().background(if (isDark) MaterialTheme.colorScheme.background else Color(0xFFF8F9FA))
         ) {
             when (val state = uiState) {
                 is MemberDetailUiState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center), color = PrimaryGreen)
@@ -583,11 +562,17 @@ fun MemberDetailScreen(
                             }
                             item { ScheduleHeader() }
                             item {
+                                val isScheduleCardDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(16.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E7EB))
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isScheduleCardDark) MaterialTheme.colorScheme.surface else Color.White
+                                    ),
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        if (isScheduleCardDark) MaterialTheme.colorScheme.outline else Color(0xFFE5E7EB)
+                                    )
                                 ) {
                                     Column {
                                         state.todayTimeline.forEachIndexed { index, item ->
@@ -601,6 +586,30 @@ fun MemberDetailScreen(
                                 }
                             }
                             item { AdherenceChartSection(state.weeklyAdherence) }
+                            if (state.type == MemberType.CONNECTED) {
+                                item {
+                                    DisconnectButtonSection(
+                                        isProcessing = isProcessing,
+                                        onDisconnect = {
+                                            if (!isProcessing) {
+                                                isProcessing = true
+                                                viewModel.revokeConnection(memberId) {
+                                                    scope.launch {
+                                                        val result = snackbarHostState.showSnackbar(
+                                                            message = "Family member disconnected successfully",
+                                                            duration = SnackbarDuration.Short
+                                                        )
+                                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                        if (result == SnackbarResult.Dismissed || result == SnackbarResult.ActionPerformed) {
+                                                            onBack()
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -630,20 +639,25 @@ fun HeaderWithStats(
     onBack: () -> Unit,
     onEditRelation: () -> Unit
 ) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val headerBg = if (isDark) MaterialTheme.colorScheme.surface else PrimaryGreen
+    val onHeaderColor = Color.White
+    val backBtnBg = if (isDark) MaterialTheme.colorScheme.background else Color.White.copy(alpha = 0.2f)
+    val backBtnTint = if (isDark) MaterialTheme.colorScheme.primary else Color.White
     Box(
-        modifier = Modifier.fillMaxWidth().background(PrimaryGreen).statusBarsPadding().padding(bottom = 32.dp)
+        modifier = Modifier.fillMaxWidth().background(headerBg).statusBarsPadding().padding(bottom = 32.dp)
     ) {
         Column(Modifier.padding(horizontal = 20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 16.dp)) {
                 IconButton(
                     onClick = onBack,
-                    modifier = Modifier.size(40.dp).background(Color.White.copy(alpha = 0.2f), CircleShape)
+                    modifier = Modifier.size(40.dp).background(backBtnBg, CircleShape)
                 ) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = backBtnTint)
                 }
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(state.name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text(state.name, color = onHeaderColor, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                     val syncedText by rememberUpdatedState(state.lastSyncedText)
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -651,7 +665,7 @@ fun HeaderWithStats(
                     ) {
                         Text(
                             text = "${state.relation} • Last synced $syncedText",
-                            color = Color.White.copy(alpha = 0.8f),
+                            color = onHeaderColor.copy(alpha = 0.8f),
                             fontSize = 14.sp
                         )
                         if (state.type != MemberType.PRIMARY) {
@@ -659,7 +673,7 @@ fun HeaderWithStats(
                             Icon(
                                 Icons.Default.Edit,
                                 contentDescription = "Edit label",
-                                tint = Color.White.copy(alpha = 0.6f),
+                                tint = onHeaderColor.copy(alpha = 0.6f),
                                 modifier = Modifier.size(12.dp)
                             )
                         }
@@ -679,11 +693,12 @@ fun HeaderWithStats(
 
 @Composable
 fun StatCard(title: String, value: String, modifier: Modifier = Modifier) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
     Surface(
         modifier = modifier.height(85.dp),
         shape = RoundedCornerShape(16.dp),
-        color = Color.White.copy(alpha = 0.15f),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+        color = if (isDark) MaterialTheme.colorScheme.background.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.15f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) MaterialTheme.colorScheme.outline else Color.White.copy(alpha = 0.2f))
     ) {
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             Text(value, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -714,74 +729,194 @@ fun MissedAlertBox(
     onShowSnackbar: (String) -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val timeAgo = missed.status.removePrefix("Missed ").trim().ifEmpty { "5 mins ago" }
 
     Card(
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFEE2E2))
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFCA5A5).copy(alpha = 0.4f))
     ) {
-        Column(Modifier.padding(24.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.padding(20.dp)) {
+            // Header Section
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Error,
+                    contentDescription = null,
+                    tint = Color(0xFFDC2626),
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = "Missed Dose",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color(0xFFDC2626)
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = timeAgo,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFFDC2626)
+                )
+            }
+            
+            Spacer(Modifier.height(12.dp))
+            HorizontalDivider(color = Color(0xFFE5E7EB).copy(alpha = 0.5f), thickness = 1.dp)
+            Spacer(Modifier.height(12.dp))
+
+            // Patient Section
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Surface(
-                    modifier = Modifier.size(40.dp),
+                    modifier = Modifier.size(32.dp),
                     shape = CircleShape,
                     color = Color(0xFFFEE2E2)
                 ) {
-                    Icon(
-                        Icons.Default.Error,
-                        null,
-                        tint = Color(0xFFDC2626),
-                        modifier = Modifier.padding(8.dp)
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = Color(0xFF991B1B),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
-                Spacer(Modifier.width(16.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = "$name ($relation)",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 13.sp,
-                        color = Color(0xFF991B1B),
-                        letterSpacing = 0.5.sp
-                    )
-                    Text(
-                        text = if (missedCount > 1) "Missed $missedCount doses today" else "Missed ${missed.time} dose",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = Color(0xFF7F1D1D)
-                    )
-                    Text(
-                        text = "Needs attention",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFFDC2626).copy(alpha = 0.8f)
-                    )
-                }
-                Text(missed.status, fontSize = 12.sp, color = Color(0xFFDC2626).copy(alpha = 0.8f))
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = "$name ($relation)",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = Color(0xFF1F2937)
+                )
             }
-            
+
+            Spacer(Modifier.height(12.dp))
+            HorizontalDivider(color = Color(0xFFE5E7EB).copy(alpha = 0.5f), thickness = 1.dp)
+            Spacer(Modifier.height(12.dp))
+
+            // Medication Section
+            Row(
+                verticalAlignment = Alignment.Top,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Surface(
+                    modifier = Modifier.size(32.dp),
+                    shape = CircleShape,
+                    color = Color(0xFFFEE2E2)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Medication,
+                            contentDescription = null,
+                            tint = Color(0xFF991B1B),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = missed.medicineName,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color(0xFF1F2937)
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.WatchLater,
+                            contentDescription = null,
+                            tint = Color(0xFF9CA3AF),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = "Scheduled: ${missed.time}",
+                            fontSize = 13.sp,
+                            color = Color(0xFF6B7280)
+                        )
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.WatchLater,
+                            contentDescription = null,
+                            tint = Color(0xFFDC2626),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = "Missed: $timeAgo",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFFDC2626)
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+            HorizontalDivider(color = Color(0xFFE5E7EB).copy(alpha = 0.5f), thickness = 1.dp)
+            Spacer(Modifier.height(12.dp))
+
+            // Warning / Call-to-action Section
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ErrorOutline,
+                    contentDescription = null,
+                    tint = Color(0xFFDC2626),
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "Please check if they are okay.",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    color = Color(0xFF374151)
+                )
+            }
+
             Spacer(Modifier.height(16.dp))
-            
-            Text(
-                text = "${missed.medicineName} was not taken. Please check if they are okay.",
-                fontSize = 14.sp,
-                color = Color(0xFF991B1B).copy(alpha = 0.8f),
-                lineHeight = 20.sp
-            )
-            
-            Spacer(Modifier.height(24.dp))
-            
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+
+            // Actions Row
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Button(
                     onClick = onCheckSchedule,
-                    modifier = Modifier.weight(1.1f),
+                    modifier = Modifier.weight(1.1f).height(48.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
                     shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(vertical = 12.dp)
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                 ) {
-                    Icon(Icons.Default.DateRange, null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Check Schedule", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Icon(
+                        imageVector = Icons.Default.DateRange,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "Check Schedule",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
                 }
                 
                 OutlinedButton(
@@ -795,14 +930,27 @@ fun MissedAlertBox(
                             onShowSnackbar("Phone number not available for this family member.")
                         }
                     },
-                    modifier = Modifier.weight(0.9f),
+                    modifier = Modifier.weight(0.9f).height(48.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryGreen),
                     shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(vertical = 12.dp)
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                 ) {
-                    Icon(Icons.Default.Phone, null, modifier = Modifier.size(16.dp), tint = PrimaryGreen)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Call Now", color = PrimaryGreen, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Icon(
+                        imageVector = Icons.Default.Phone,
+                        contentDescription = null,
+                        tint = PrimaryGreen,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "Call Now",
+                        color = PrimaryGreen,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
                 }
             }
         }
@@ -811,6 +959,8 @@ fun MissedAlertBox(
 
 @Composable
 fun ScheduleHeader() {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
         Text("Today's schedule", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
     }
@@ -818,8 +968,13 @@ fun ScheduleHeader() {
 
 @Composable
 fun MedicineScheduleItem(item: TimelineItem, showDivider: Boolean, isHighlighted: Boolean = false) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val DividerGray = if (isDark) MaterialTheme.colorScheme.outline else com.pralayakaveri.medisave.ui.theme.DividerGray
+
     val backgroundColor by androidx.compose.animation.animateColorAsState(
-        targetValue = if (isHighlighted) Color(0xFFE8F5E9) else Color.Transparent,
+        targetValue = if (isHighlighted) (if (isDark) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFE8F5E9)) else Color.Transparent,
         animationSpec = androidx.compose.animation.core.tween(durationMillis = 600),
         label = "highlight_fade"
     )
@@ -834,7 +989,10 @@ fun MedicineScheduleItem(item: TimelineItem, showDivider: Boolean, isHighlighted
             isOutOfStock && item.status != "TAKEN" -> Pair(Color(0xFFFEE2E2), Color(0xFF991B1B))
             isLastPill && item.status != "TAKEN" -> Pair(Color(0xFFFFF7ED), Color(0xFF9A3412))
             item.status == "PENDING" -> Pair(Color(0xFFFFEDD5), Color(0xFF9A3412))
-            else -> Pair(Color(0xFFF3F4F6), Color(0xFF374151))
+            else -> Pair(
+                if (isDark) MaterialTheme.colorScheme.surface else Color(0xFFF3F4F6),
+                if (isDark) MaterialTheme.colorScheme.onSurface else Color(0xFF374151)
+            )
         }
         Column {
             Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -904,12 +1062,16 @@ fun MedicineScheduleItem(item: TimelineItem, showDivider: Boolean, isHighlighted
 @Composable
 fun AdherenceChartSection(data: List<DailyAdherence>) {
     val todayStr = java.time.LocalDate.now().toString()
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val PrimaryGreen = if (isDark) MaterialTheme.colorScheme.primary else com.pralayakaveri.medisave.ui.theme.PrimaryGreen
     
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(Color.White)
+            .background(if (isDark) MaterialTheme.colorScheme.surface else Color.White)
             .padding(20.dp)
     ) {
         Text("7-day adherence", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = TextPrimary)
@@ -969,11 +1131,12 @@ fun AdherenceChartSection(data: List<DailyAdherence>) {
 
 @Composable
 fun DisconnectButtonSection(isProcessing: Boolean, onDisconnect: () -> Unit) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
     Button(
         onClick = onDisconnect,
         enabled = !isProcessing,
         modifier = Modifier.fillMaxWidth().padding(16.dp).height(56.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+        colors = ButtonDefaults.buttonColors(containerColor = if (isDark) MaterialTheme.colorScheme.background else Color.White),
         border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red.copy(alpha = 0.3f)),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -983,7 +1146,13 @@ fun DisconnectButtonSection(isProcessing: Boolean, onDisconnect: () -> Unit) {
 
 @Composable
 fun StartingTodayBanner() {
-    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), color = Color(0xFFE8F5E9)) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val PrimaryGreen = if (isDark) MaterialTheme.colorScheme.primary else com.pralayakaveri.medisave.ui.theme.PrimaryGreen
+    Surface(
+        modifier = Modifier.fillMaxWidth(), 
+        shape = RoundedCornerShape(16.dp), 
+        color = if (isDark) MaterialTheme.colorScheme.surface else Color(0xFFE8F5E9)
+    ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.Info, null, tint = PrimaryGreen)
             Spacer(Modifier.width(12.dp))
@@ -995,6 +1164,7 @@ fun StartingTodayBanner() {
 @Composable
 fun GlobalAlertsWarning() {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -1006,11 +1176,16 @@ fun GlobalAlertsWarning() {
                 context.startActivity(intent)
             },
         shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFFFF7ED),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFEDD5))
+        color = if (isDark) MaterialTheme.colorScheme.surface else Color(0xFFFFF7ED),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) MaterialTheme.colorScheme.outline else Color(0xFFFFEDD5))
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.NotificationsPaused, null, tint = Color(0xFFC2410C), modifier = Modifier.size(20.dp))
+            Icon(
+                Icons.Default.NotificationsPaused, 
+                null, 
+                tint = if (isDark) MaterialTheme.colorScheme.primary else Color(0xFFC2410C), 
+                modifier = Modifier.size(20.dp)
+            )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -1044,10 +1219,13 @@ fun EditLabelBottomSheet(
     var selectedPreset by remember { mutableStateOf(if (isInitialPreset) currentLabel else "Custom...") }
     var customText by remember { mutableStateOf(if (!isInitialPreset) currentLabel else "") }
     
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val PrimaryGreen = if (isDark) MaterialTheme.colorScheme.primary else com.pralayakaveri.medisave.ui.theme.PrimaryGreen
+    
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(),
-        containerColor = Color.White
+        containerColor = if (isDark) MaterialTheme.colorScheme.surface else Color.White
     ) {
         Column(
             modifier = Modifier

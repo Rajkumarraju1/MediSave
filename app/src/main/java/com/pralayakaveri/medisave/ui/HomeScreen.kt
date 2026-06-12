@@ -334,6 +334,7 @@ fun HomeHeader(
     onDebugClick: (String) -> Unit,
     debugInfo: String
 ) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
     val calendar = Calendar.getInstance()
     val hour = calendar.get(Calendar.HOUR_OF_DAY)
     
@@ -346,8 +347,9 @@ fun HomeHeader(
     
     val dateStr = java.text.SimpleDateFormat("EEEE, d MMMM yyyy", java.util.Locale.getDefault()).format(java.util.Date())
 
-    // Removed legacy cardBg logic - now handled by AdherenceThemeMapper
-    val cardBg = adherenceTheme.cardBackground
+    // In Light Mode: use the dynamic AdherenceThemeMapper color (green/amber/red/blue).
+    // In Dark Mode: ALWAYS use fixed dark surface — no dynamic score-based colors.
+    val cardBg = if (isDark) Color(0xFF121815) else adherenceTheme.cardBackground
 
     Box(
         modifier = Modifier
@@ -357,7 +359,7 @@ fun HomeHeader(
                 brush = Brush.verticalGradient(
                     colors = listOf(
                         cardBg,
-                        cardBg.copy(alpha = 0.85f)
+                        cardBg.copy(alpha = 0.92f)
                     )
                 )
             )
@@ -376,14 +378,14 @@ fun HomeHeader(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "$greeting,", 
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f), 
+                        color = if (isDark) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f), 
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = userName.ifBlank { "User" },
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        color = if (isDark) Color.White else MaterialTheme.colorScheme.onPrimary,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.ExtraBold,
                         maxLines = 1,
@@ -451,13 +453,13 @@ fun HomeHeader(
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
                                 text = if (adherencePercentage != null) "${adherencePercentage}%" else "—",
-                                color = MaterialTheme.colorScheme.onPrimary,
+                                color = if (isDark) Color.White else MaterialTheme.colorScheme.onPrimary,
                                 fontSize = 28.sp,
                                 fontWeight = FontWeight.Black
                             )
                             Text(
                                 text = todayFractionLabel,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                                color = if (isDark) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -467,19 +469,22 @@ fun HomeHeader(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Progress Bar
+                    val progressBarTrackColor = if (isDark) MaterialTheme.colorScheme.outline else Color.White.copy(alpha = 0.2f)
+                    val progressBarFillColor = if (isDark) MaterialTheme.colorScheme.primary else Color.White
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(6.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.2f))
+                            .background(progressBarTrackColor)
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth(if (adherencePercentage != null) adherencePercentage / 100f else 0f)
                                 .height(6.dp)
                                 .clip(CircleShape)
-                                .background(Color.White)
+                                .background(progressBarFillColor)
                         )
                     }
 
@@ -496,14 +501,27 @@ fun HomeHeader(
                             
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 // Day Rendering Logic (Simplified dots as requested)
-                                val dotBg = when (status) {
-                                    com.pralayakaveri.medisave.viewmodel.DayStatus.TAKEN -> Color.White.copy(alpha = 0.25f)
-                                    com.pralayakaveri.medisave.viewmodel.DayStatus.MISSED -> Color.White.copy(alpha = 0.25f)
-                                    com.pralayakaveri.medisave.viewmodel.DayStatus.BLUE -> Color.White.copy(alpha = 0.25f)
-                                    com.pralayakaveri.medisave.viewmodel.DayStatus.TODAY,
-                                    com.pralayakaveri.medisave.viewmodel.DayStatus.PARTIAL -> Color.White.copy(alpha = 0.15f)
-                                    else -> Color.White.copy(alpha = 0.05f) // FUTURE / EMPTY
+                                val dotBg = if (isDark) {
+                                    when (status) {
+                                        com.pralayakaveri.medisave.viewmodel.DayStatus.TAKEN -> MaterialTheme.colorScheme.primary
+                                        com.pralayakaveri.medisave.viewmodel.DayStatus.MISSED -> Color.White.copy(alpha = 0.15f) // muted dark circle
+                                        com.pralayakaveri.medisave.viewmodel.DayStatus.BLUE -> MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                        com.pralayakaveri.medisave.viewmodel.DayStatus.TODAY,
+                                        com.pralayakaveri.medisave.viewmodel.DayStatus.PARTIAL -> MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                        else -> Color.White.copy(alpha = 0.05f) // FUTURE / EMPTY
+                                    }
+                                } else {
+                                    when (status) {
+                                        com.pralayakaveri.medisave.viewmodel.DayStatus.TAKEN -> Color.White.copy(alpha = 0.25f)
+                                        com.pralayakaveri.medisave.viewmodel.DayStatus.MISSED -> Color.White.copy(alpha = 0.25f)
+                                        com.pralayakaveri.medisave.viewmodel.DayStatus.BLUE -> Color.White.copy(alpha = 0.25f)
+                                        com.pralayakaveri.medisave.viewmodel.DayStatus.TODAY,
+                                        com.pralayakaveri.medisave.viewmodel.DayStatus.PARTIAL -> Color.White.copy(alpha = 0.15f)
+                                        else -> Color.White.copy(alpha = 0.05f) // FUTURE / EMPTY
+                                    }
                                 }
+
+                                val dotBorderColor = if (isDark) MaterialTheme.colorScheme.primary else Color.White
 
                                 Box(
                                     modifier = Modifier
@@ -513,34 +531,44 @@ fun HomeHeader(
                                         .alpha(if (status == com.pralayakaveri.medisave.viewmodel.DayStatus.FUTURE) 0.3f else 1.0f)
                                         .then(
                                             if (isToday || status == com.pralayakaveri.medisave.viewmodel.DayStatus.PARTIAL)
-                                                Modifier.border(1.5.dp, Color.White, CircleShape)
+                                                Modifier.border(1.5.dp, dotBorderColor, CircleShape)
                                             else Modifier
                                         ),
                                     contentAlignment = Alignment.Center
                                 ) {
+                                    val iconTint = if (isDark) {
+                                        if (status == com.pralayakaveri.medisave.viewmodel.DayStatus.TAKEN) MaterialTheme.colorScheme.background else Color.White
+                                    } else {
+                                        Color.White
+                                    }
+                                    val textColor = if (isDark) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        Color.White
+                                    }
                                     when {
                                         // 🔵 Rule: TODAY always shows fraction (0/2, 1/2, 2/2)
                                         isToday -> {
                                             Text(
                                                 text = "${stat.taken}/${stat.total}",
-                                                color = Color.White,
+                                                color = textColor,
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold
                                             )
                                         }
                                         // 🟢 Past: PERFECT
                                         status == com.pralayakaveri.medisave.viewmodel.DayStatus.TAKEN -> {
-                                            Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                            Icon(Icons.Default.Check, null, tint = iconTint, modifier = Modifier.size(18.dp))
                                         }
                                         // 🔴 Past: MISSED
                                         status == com.pralayakaveri.medisave.viewmodel.DayStatus.MISSED -> {
-                                            Icon(Icons.Default.Close, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                            Icon(Icons.Default.Close, null, tint = iconTint, modifier = Modifier.size(18.dp))
                                         }
                                         // 🟡 Past: PARTIAL
                                         status == com.pralayakaveri.medisave.viewmodel.DayStatus.PARTIAL -> {
                                             Text(
                                                 text = "${stat.taken}/${stat.total}",
-                                                color = Color.White,
+                                                color = textColor,
                                                 fontSize = 10.sp,
                                                 fontWeight = FontWeight.Bold
                                             )
@@ -605,11 +633,44 @@ fun StatsRow(total: Int, taken: Int, pending: Int) {
 
 @Composable
 fun StatCard(modifier: Modifier = Modifier, number: String, label: String, bgColor: Color, textColor: Color) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val DividerGray = if (isDark) MaterialTheme.colorScheme.outline else com.pralayakaveri.medisave.ui.theme.DividerGray
+
+    val resolvedBgColor = if (isDark) {
+        if (label == "Taken") {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else if (bgColor == Color.White) {
+            MaterialTheme.colorScheme.surface
+        } else {
+            bgColor
+        }
+    } else {
+        bgColor
+    }
+
+    val resolvedTextColor = if (isDark) {
+        if (label == "Taken") {
+            MaterialTheme.colorScheme.primary
+        } else if (textColor == com.pralayakaveri.medisave.ui.theme.TextPrimary) {
+            MaterialTheme.colorScheme.onSurface
+        } else {
+            textColor
+        }
+    } else {
+        textColor
+    }
+
+    val resolvedBorder = if (resolvedBgColor != TakenGreenBg && resolvedBgColor != MaterialTheme.colorScheme.secondaryContainer) {
+        androidx.compose.foundation.BorderStroke(1.dp, if (isDark) MaterialTheme.colorScheme.outline else DividerGray.copy(alpha = 0.5f))
+    } else null
+
     Surface(
         modifier = modifier.height(90.dp),
         shape = RoundedCornerShape(16.dp),
-        color = bgColor,
-        border = if (bgColor == Color.White) androidx.compose.foundation.BorderStroke(1.dp, DividerGray.copy(alpha = 0.5f)) else null,
+        color = resolvedBgColor,
+        border = resolvedBorder,
         shadowElevation = 0.dp
     ) {
         Column(
@@ -621,13 +682,17 @@ fun StatCard(modifier: Modifier = Modifier, number: String, label: String, bgCol
                 text = number, 
                 fontSize = 28.sp, 
                 fontWeight = FontWeight.Bold, 
-                color = if (label == "Taken") BrandingGreen else TextPrimary
+                color = if (label == "Taken") {
+                    if (isDark) MaterialTheme.colorScheme.primary else BrandingGreen
+                } else resolvedTextColor
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = label, 
                 fontSize = 13.sp, 
-                color = if (label == "Taken") BrandingGreen else TextSecondary, 
+                color = if (label == "Taken") {
+                    if (isDark) MaterialTheme.colorScheme.primary else BrandingGreen
+                } else TextSecondary, 
                 fontWeight = FontWeight.Medium
             )
         }
@@ -643,6 +708,9 @@ fun ScheduleSection(
     onDeleteMedicine: (String) -> Unit,
     onNavigateToGenerics: () -> Unit
 ) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
     Column(modifier = Modifier.padding(horizontal = 24.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -746,6 +814,11 @@ fun ScheduleItemCard(
     onDeleteMedicine: (String) -> Unit,
     onNavigateToGenerics: () -> Unit
 ) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val dividerColor = if (isDark) MaterialTheme.colorScheme.outline else DividerGray
+
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showResetConfirm by remember { mutableStateOf(false) }
@@ -827,13 +900,13 @@ fun ScheduleItemCard(
     }
     
     val borderColor = when {
-        isTaken -> DividerGray
+        isTaken -> dividerColor
         isOutOfStock -> Color.Red
         isLastPill -> DotOrange
-        isAutoSkipped -> DividerGray.copy(alpha = 0.5f)
+        isAutoSkipped -> dividerColor.copy(alpha = 0.5f)
         item.isComputedOverdue -> Color(0xFFF59E0B) // amber — overdue but still actionable
         isNextUp -> PrimaryGreen
-        else -> DividerGray
+        else -> dividerColor
     }
     
     val dotColor = when {
@@ -1216,17 +1289,21 @@ fun RefillBottomSheet(
         }
     }
 
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color.White,
+        containerColor = if (isDark) MaterialTheme.colorScheme.surface else Color.White,
         dragHandle = {
             Box(
                 modifier = Modifier
                     .padding(top = 12.dp, bottom = 8.dp)
                     .size(width = 40.dp, height = 4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Color(0xFFE0E0E0))
+                    .background(if (isDark) MaterialTheme.colorScheme.outline else Color(0xFFE0E0E0))
             )
         }
     ) {
@@ -1267,9 +1344,9 @@ fun RefillBottomSheet(
                     )
                 }
             }
-
+ 
             Spacer(modifier = Modifier.height(28.dp))
-
+ 
             // ── Quick-add chips ───────────────────────────────────────────
             Text(
                 text = "Quick add",
@@ -1290,10 +1367,10 @@ fun RefillBottomSheet(
                                 inputError = ""
                             },
                         shape = RoundedCornerShape(12.dp),
-                        color = if (isSelected) PrimaryGreen else Color(0xFFF0FDF4),
+                        color = if (isSelected) PrimaryGreen else if (isDark) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFF0FDF4),
                         border = androidx.compose.foundation.BorderStroke(
                             width = 1.5.dp,
-                            color = if (isSelected) PrimaryGreen else Color(0xFFBBF7D0)
+                            color = if (isSelected) PrimaryGreen else if (isDark) MaterialTheme.colorScheme.outline else Color(0xFFBBF7D0)
                         )
                     ) {
                         Column(
@@ -1304,12 +1381,12 @@ fun RefillBottomSheet(
                                 text = "+$qty",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isSelected) Color.White else PrimaryGreen
+                                color = if (isSelected) Color.White else if (isDark) MaterialTheme.colorScheme.onSurface else PrimaryGreen
                             )
                             Text(
                                 text = "pills",
                                 fontSize = 11.sp,
-                                color = if (isSelected) Color.White.copy(alpha = 0.85f) else PrimaryGreen.copy(alpha = 0.7f)
+                                color = if (isSelected) Color.White.copy(alpha = 0.85f) else if (isDark) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f) else PrimaryGreen.copy(alpha = 0.7f)
                             )
                         }
                     }
@@ -1411,6 +1488,8 @@ fun RefillBottomSheet(
 
 @Composable
 fun LoadingState() {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -1424,6 +1503,10 @@ fun LoadingState() {
 
 @Composable
 fun EmptyState(onAddMedicine: () -> Unit) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val DividerGray = if (isDark) MaterialTheme.colorScheme.outline else com.pralayakaveri.medisave.ui.theme.DividerGray
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
         verticalArrangement = Arrangement.Center,
@@ -1462,6 +1545,9 @@ fun EmptyState(onAddMedicine: () -> Unit) {
 
 @Composable
 fun ErrorState(message: String) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
         verticalArrangement = Arrangement.Center,

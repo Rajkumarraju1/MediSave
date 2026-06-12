@@ -47,6 +47,18 @@ fun ConnectionRequestScreen(
     val scrollState = rememberScrollState()
     val pendingCount = allRequests?.size ?: 0
 
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val PremiumTeal = if (isDark) MaterialTheme.colorScheme.primary else com.pralayakaveri.medisave.ui.theme.PremiumTeal
+    val PremiumCardBg = if (isDark) MaterialTheme.colorScheme.surfaceVariant else com.pralayakaveri.medisave.ui.theme.PremiumCardBg
+    val PremiumGreyText = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.PremiumGreyText
+
+    val ColorGray = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
+    val Color1A1A1A = if (isDark) MaterialTheme.colorScheme.onBackground else Color(0xFF1A1A1A)
+    val Color333333 = if (isDark) MaterialTheme.colorScheme.onBackground else Color(0xFF333333)
+    val Color888888 = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF888888)
+
     // 1. AUTO-DISMISS: If the specific request we are viewing disappears or is handled elsewhere
     LaunchedEffect(allRequests) {
         val requests = allRequests
@@ -68,7 +80,7 @@ fun ConnectionRequestScreen(
         }
     }
 
-    Scaffold(containerColor = Color.White) { padding ->
+    Scaffold(containerColor = if (isDark) MaterialTheme.colorScheme.background else Color.White) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(bottom = padding.calculateBottomPadding())) {
             when (val state = screenState) {
                 is ConsentScreenState.Loading -> {
@@ -142,7 +154,7 @@ fun ConnectionRequestScreen(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .fillMaxWidth()
-                            .background(Color.White)
+                            .background(if (isDark) MaterialTheme.colorScheme.background else Color.White)
                             .padding(20.dp)
                     ) {
                         ConsentActions(
@@ -206,12 +218,21 @@ fun ConsentContent(
         if (m <= 0) "just recently" else "$m months ago"
     }
 
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val PremiumTeal = if (isDark) MaterialTheme.colorScheme.primary else com.pralayakaveri.medisave.ui.theme.PremiumTeal
+    val PremiumCardBg = if (isDark) MaterialTheme.colorScheme.surfaceVariant else com.pralayakaveri.medisave.ui.theme.PremiumCardBg
+    val PremiumGreyText = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.PremiumGreyText
+    val PremiumBorder = if (isDark) MaterialTheme.colorScheme.outline else com.pralayakaveri.medisave.ui.theme.PremiumBorder
+    val ColorGray = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
+    val Color1A1A1A = if (isDark) MaterialTheme.colorScheme.onBackground else Color(0xFF1A1A1A)
+    val Color333333 = if (isDark) MaterialTheme.colorScheme.onBackground else Color(0xFF333333)
+
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
         // User Profile Card
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            color = Color.White,
+            color = if (isDark) MaterialTheme.colorScheme.surface else Color.White,
             border = BorderStroke(1.dp, PremiumBorder),
             shadowElevation = 2.dp
         ) {
@@ -228,7 +249,7 @@ fun ConsentContent(
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text(text = name, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1A1A1A))
+                        Text(text = name, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color1A1A1A)
                         Text(text = "wants to connect as your $relation", fontSize = 14.sp, color = PremiumGreyText)
                         if (pendingCount > 1) {
                             Surface(
@@ -245,7 +266,7 @@ fun ConsentContent(
                                 )
                             }
                         } else {
-                            Text(text = "MediSave user · Joined $months", fontSize = 12.sp, color = Color.Gray)
+                            Text(text = "MediSave user · Joined $months", fontSize = 12.sp, color = ColorGray)
                         }
                     }
                 }
@@ -263,7 +284,7 @@ fun ConsentContent(
                             text = "If you accept, $name can see:",
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 15.sp,
-                            color = Color(0xFF333333),
+                            color = Color333333,
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
 
@@ -302,7 +323,7 @@ fun ConsentContent(
                 Text(
                     text = "You can disconnect anytime from your\nProfile settings",
                     fontSize = 12.sp,
-                    color = Color.Gray,
+                    color = ColorGray,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -316,6 +337,12 @@ fun ConsentActions(
     onAccept: () -> Unit,
     onDecline: () -> Unit
 ) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val PremiumTeal = if (isDark) MaterialTheme.colorScheme.primary else com.pralayakaveri.medisave.ui.theme.PremiumTeal
+    val PremiumDeclineBg = if (isDark) MaterialTheme.colorScheme.surfaceVariant else com.pralayakaveri.medisave.ui.theme.PremiumDeclineBg
+    val PremiumGreyText = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.PremiumGreyText
+    val ColorGray = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
+
     Column {
         // Action Buttons
         Button(
@@ -348,7 +375,7 @@ fun ConsentActions(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center
         ) {
-            Text("Don't know this person? ", fontSize = 14.sp, color = Color.Gray)
+            Text("Don't know this person? ", fontSize = 14.sp, color = ColorGray)
             Text(
                 "Report", 
                 fontSize = 14.sp, 
@@ -362,6 +389,12 @@ fun ConsentActions(
 
 @Composable
 fun PermissionItem(title: String, subtitle: String?, allowed: Boolean) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val PremiumTeal = if (isDark) MaterialTheme.colorScheme.primary else com.pralayakaveri.medisave.ui.theme.PremiumTeal
+    val Color333333 = if (isDark) MaterialTheme.colorScheme.onBackground else Color(0xFF333333)
+    val Color888888 = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF888888)
+    val ColorGray = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -388,13 +421,13 @@ fun PermissionItem(title: String, subtitle: String?, allowed: Boolean) {
                 text = title,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = if (allowed) Color(0xFF333333) else Color(0xFF888888)
+                color = if (allowed) Color333333 else Color888888
             )
             if (subtitle != null) {
                 Text(
                     text = subtitle,
                     fontSize = 13.sp,
-                    color = Color.Gray
+                    color = ColorGray
                 )
             }
         }
@@ -403,6 +436,10 @@ fun PermissionItem(title: String, subtitle: String?, allowed: Boolean) {
 
 @Composable
 fun ErrorUI(onHandled: () -> Unit) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val PremiumTeal = if (isDark) MaterialTheme.colorScheme.primary else com.pralayakaveri.medisave.ui.theme.PremiumTeal
+    val ColorGray = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
+
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center,
@@ -411,7 +448,7 @@ fun ErrorUI(onHandled: () -> Unit) {
         Icon(Icons.Default.Error, contentDescription = null, tint = PremiumSoftRed, modifier = Modifier.size(64.dp))
         Spacer(modifier = Modifier.height(16.dp))
         Text("Requester profile not found", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-        Text("This request may have expired or was cancelled.", textAlign = TextAlign.Center, color = Color.Gray)
+        Text("This request may have expired or was cancelled.", textAlign = TextAlign.Center, color = ColorGray)
         Spacer(modifier = Modifier.height(24.dp))
         Button(onClick = onHandled, colors = ButtonDefaults.buttonColors(containerColor = PremiumTeal)) {
             Text("Dismiss")
@@ -429,10 +466,14 @@ fun ReciprocalRelationPicker(
     var customRelation by remember { mutableStateOf("") }
     val relations = listOf("Mom", "Dad", "Spouse", "Child", "Sibling", "Caregiver", "Custom...")
     
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val PremiumTeal = if (isDark) MaterialTheme.colorScheme.primary else com.pralayakaveri.medisave.ui.theme.PremiumTeal
+    val PremiumGreyText = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.PremiumGreyText
+    
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(),
-        containerColor = Color.White
+        containerColor = if (isDark) MaterialTheme.colorScheme.surface else Color.White
     ) {
         Column(
             modifier = Modifier

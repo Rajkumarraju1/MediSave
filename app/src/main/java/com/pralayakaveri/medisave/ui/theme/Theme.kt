@@ -42,16 +42,20 @@ private val DarkColors = darkColorScheme(
 
 @Composable
 fun MediSaveTheme(
+    themePreference: String = "Light",
     content: @Composable () -> Unit
 ) {
-    val colorScheme = LightColors
+    val darkTheme = themePreference == "Dark"
+    val colorScheme = if (darkTheme) DarkColors else LightColors
     
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as android.app.Activity).window
             window.statusBarColor = Color.Transparent.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = !darkTheme
+            controller.isAppearanceLightNavigationBars = !darkTheme
         }
     }
 

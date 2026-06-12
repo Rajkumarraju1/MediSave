@@ -21,6 +21,7 @@ class ReminderManagerSafetyTest {
         // Mock Log
         mockkStatic(android.util.Log::class)
         every { android.util.Log.d(any(), any()) } returns 0
+        every { android.util.Log.d(any(), any(), any()) } returns 0
         every { android.util.Log.e(any(), any()) } returns 0
         every { android.util.Log.e(any(), any(), any()) } returns 0
 
@@ -32,6 +33,7 @@ class ReminderManagerSafetyTest {
         // Mock Intent
         mockkConstructor(android.content.Intent::class)
         every { anyConstructed<android.content.Intent>().putExtra(any<String>(), any<String>()) } returns mockk()
+        every { anyConstructed<android.content.Intent>().setAction(any()) } returns mockk()
 
         // Mock static PendingIntent.getBroadcast
         mockkStatic(PendingIntent::class)

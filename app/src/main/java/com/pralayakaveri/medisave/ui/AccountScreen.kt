@@ -44,6 +44,10 @@ fun AccountScreen(
     viewModel: ProfileViewModel = viewModel(),
     settingsViewModel: SettingsViewModel = viewModel()
 ) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+
     val primaryUser by viewModel.primaryUser.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val successState = uiState as? ProfileUiState.Success
@@ -51,14 +55,14 @@ fun AccountScreen(
     val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     var deleteDialogStage by remember { mutableStateOf(DeleteDialogStage.NONE) }
     var passwordInput by remember { mutableStateOf("") }
-
+ 
     // Redirect to login when deletion is completed successfully
     LaunchedEffect(settingsUiState.isAccountDeleted) {
         if (settingsUiState.isAccountDeleted) {
             onLogout()
         }
     }
-
+ 
     // Lock navigation during critical database / auth deletion transactions
     BackHandler(enabled = settingsUiState.deletionStage == DeletionStage.PURGING || settingsUiState.deletionStage == DeletionStage.AUTH_DELETE) {
         // Block hardware back gesture
@@ -82,7 +86,7 @@ fun AccountScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = Color(0xFFF9F9F9)
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -95,7 +99,7 @@ fun AccountScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = if (isDark) MaterialTheme.colorScheme.surface else Color.White),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
@@ -103,14 +107,14 @@ fun AccountScreen(
                             Surface(
                                 modifier = Modifier.size(64.dp),
                                 shape = CircleShape,
-                                color = BrandingGreen.copy(alpha = 0.1f)
+                                color = if (isDark) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else BrandingGreen.copy(alpha = 0.1f)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Text(
                                         text = primaryUser?.name?.getOrNull(0)?.toString()?.uppercase() ?: "?",
                                         fontSize = 24.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = BrandingGreen
+                                        color = if (isDark) MaterialTheme.colorScheme.primary else BrandingGreen
                                     )
                                 }
                             }
@@ -133,7 +137,7 @@ fun AccountScreen(
                             
                             Text(
                                 text = "Edit profile",
-                                color = BrandingGreen,
+                                color = if (isDark) MaterialTheme.colorScheme.primary else BrandingGreen,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.clickable { onNavigateToEditProfile() }
@@ -172,7 +176,7 @@ fun AccountScreen(
             item {
                 AccountActionItem(
                     icon = Icons.Outlined.Lock,
-                    iconColor = Color(0xFFE3F2FD),
+                    iconColor = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFE3F2FD),
                     title = "Change password",
                     subtitle = "Update your login password",
                     onClick = { onNavigateToChangePassword() }
@@ -181,7 +185,7 @@ fun AccountScreen(
             item {
                 AccountActionItem(
                     icon = Icons.Outlined.Link,
-                    iconColor = Color(0xFFE8F5E9),
+                    iconColor = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFE8F5E9),
                     title = "Linked accounts",
                     subtitle = "Google · ${primaryUser?.email ?: ""}",
                     onClick = { onNavigateToLinkedAccounts() }
@@ -190,22 +194,22 @@ fun AccountScreen(
             item {
                 AccountActionItem(
                     icon = Icons.Outlined.StarOutline,
-                    iconColor = Color(0xFFFFF8E1),
+                    iconColor = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFFFF8E1),
                     title = "Upgrade to Premium",
                     subtitle = "Unlimited · Reports · No ads",
                     badgeText = "₹49/mo",
                     onClick = { /* Upgrade intent */ }
                 )
             }
-
+ 
             item { Spacer(modifier = Modifier.height(24.dp)) }
-
+ 
             // SUPPORT Section
             item { SectionHeader("SUPPORT") }
             item {
                 AccountActionItem(
                     icon = Icons.Outlined.HelpOutline,
-                    iconColor = Color(0xFFF5F5F5),
+                    iconColor = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFF5F5F5),
                     title = "Help & FAQ",
                     onClick = { /* Help intent */ }
                 )
@@ -213,20 +217,20 @@ fun AccountScreen(
             item {
                 AccountActionItem(
                     icon = Icons.Outlined.ChatBubbleOutline,
-                    iconColor = Color(0xFFF5F5F5),
+                    iconColor = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFF5F5F5),
                     title = "Send feedback",
                     onClick = { /* Feedback intent */ }
                 )
             }
-
+ 
             item { Spacer(modifier = Modifier.height(24.dp)) }
-
+ 
             // DANGER ZONE Section
             item { SectionHeader("DANGER ZONE") }
             item {
                 AccountActionItem(
                     icon = Icons.Outlined.DeleteOutline,
-                    iconColor = Color(0xFFFFEBEE),
+                    iconColor = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFFFEBEE),
                     title = "Delete account",
                     subtitle = "Permanently removes all your data",
                     titleColor = Color.Red.copy(alpha = 0.7f),
@@ -391,14 +395,14 @@ fun AccountScreen(
             Surface(
                 modifier = Modifier.padding(32.dp),
                 shape = RoundedCornerShape(24.dp),
-                color = Color.White
+                color = if (isDark) MaterialTheme.colorScheme.surface else Color.White
             ) {
                 Column(
                     modifier = Modifier.padding(32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     if (settingsUiState.error == null) {
-                        CircularProgressIndicator(color = BrandingGreen)
+                        CircularProgressIndicator(color = if (isDark) MaterialTheme.colorScheme.primary else BrandingGreen)
                         Spacer(Modifier.height(24.dp))
                     } else {
                         Icon(
@@ -448,7 +452,7 @@ fun AccountScreen(
                                     }
                                 },
                                 modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = BrandingGreen)
+                                colors = ButtonDefaults.buttonColors(containerColor = if (isDark) MaterialTheme.colorScheme.primary else BrandingGreen)
                             ) {
                                 Text("RETRY", fontWeight = FontWeight.Bold)
                             }
@@ -485,10 +489,13 @@ fun AccountScreen(
 
 @Composable
 fun AccountStatItem(label: String, value: String, modifier: Modifier = Modifier) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
     Surface(
         modifier = modifier.height(60.dp),
         shape = RoundedCornerShape(12.dp),
-        color = Color(0xFFF1F1F1)
+        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFF1F1F1)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -508,9 +515,17 @@ fun AccountActionItem(
     title: String,
     subtitle: String? = null,
     badgeText: String? = null,
-    titleColor: Color = TextPrimary,
+    titleColor: Color = Color.Unspecified,
     onClick: () -> Unit
 ) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val resolvedTextPrimary = if (isDark) MaterialTheme.colorScheme.onSurface else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    // Resolve title color: if caller passed an explicit color (e.g. red for Delete), use that;
+    // otherwise use the theme-aware primary text color.
+    val resolvedTitleColor = if (titleColor != Color.Unspecified) titleColor else resolvedTextPrimary
+    // In Dark Mode, icon container background should be a subtle tonal surface, not outlineVariant
+    val resolvedIconBg = if (isDark) MaterialTheme.colorScheme.surfaceVariant else iconColor
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -522,16 +537,16 @@ fun AccountActionItem(
             modifier = Modifier
                 .size(40.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(iconColor),
+                .background(resolvedIconBg),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp), tint = BrandingGreen)
+            Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp), tint = if (isDark) MaterialTheme.colorScheme.primary else BrandingGreen)
         }
         
         Spacer(modifier = Modifier.width(16.dp))
         
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = titleColor)
+            Text(title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = resolvedTitleColor)
             if (subtitle != null) {
                 Text(subtitle, fontSize = 12.sp, color = TextSecondary)
             }
@@ -553,7 +568,7 @@ fun AccountActionItem(
             Spacer(Modifier.width(8.dp))
         }
         
-        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFCCCCCC), modifier = Modifier.size(16.dp))
+        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = if (isDark) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f) else Color(0xFFCCCCCC), modifier = Modifier.size(16.dp))
     }
-    HorizontalDivider(color = Color(0xFFEEEEEE), thickness = 1.dp)
+    HorizontalDivider(color = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFEEEEEE), thickness = 1.dp)
 }

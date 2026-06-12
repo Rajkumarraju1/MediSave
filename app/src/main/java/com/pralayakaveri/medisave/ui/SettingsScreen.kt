@@ -35,6 +35,13 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val PrimaryGreen = if (isDark) MaterialTheme.colorScheme.primary else com.pralayakaveri.medisave.ui.theme.PrimaryGreen
+    val dividerColor = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFEEEEEE)
+    val chevronColor = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFCCCCCC)
+    
     var showProDialog by remember { mutableStateOf(false) }
     
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -93,10 +100,10 @@ fun SettingsScreen(
                         Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Back", modifier = Modifier.size(20.dp))
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = if (isDark) MaterialTheme.colorScheme.surface else Color.White)
             )
         },
-        containerColor = Color(0xFFF9F9F9)
+        containerColor = if (isDark) MaterialTheme.colorScheme.background else Color(0xFFF9F9F9)
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -227,7 +234,7 @@ fun SettingsScreen(
                 )
             }
 
-            item { Divider(Modifier.padding(vertical = 12.dp), color = Color(0xFFEEEEEE)) }
+            item { Divider(Modifier.padding(vertical = 12.dp), color = dividerColor) }
 
             // --- PREFERENCES SECTION ---
             item { SectionHeader("PREFERENCES") }
@@ -243,7 +250,18 @@ fun SettingsScreen(
                 )
             }
 
-            item { Divider(Modifier.padding(vertical = 12.dp), color = Color(0xFFEEEEEE)) }
+            item {
+                SettingClickableItem(
+                    icon = Icons.Outlined.Palette,
+                    iconColor = Color(0xFFEDE7F6),
+                    title = "App Theme",
+                    subtitle = "Choose light, dark, or system default",
+                    trailingText = uiState.appTheme,
+                    onClick = { showThemeSheet = true }
+                )
+            }
+
+            item { Divider(Modifier.padding(vertical = 12.dp), color = dividerColor) }
 
             // --- DATA & PRIVACY SECTION ---
             item { SectionHeader("DATA & PRIVACY") }
@@ -311,11 +329,11 @@ fun SettingsScreen(
         ModalBottomSheet(
             onDismissRequest = { showThemeSheet = false },
             sheetState = sheetState,
-            containerColor = Color.White
+            containerColor = if (isDark) MaterialTheme.colorScheme.surface else Color.White
         ) {
             Column(Modifier.padding(bottom = 32.dp)) {
                 Text("Select Theme", Modifier.padding(24.dp), fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                listOf("Light", "Dark", "System").forEach { theme ->
+                listOf("Light", "Dark").forEach { theme ->
                     Row(
                         Modifier.fillMaxWidth().clickable { 
                             viewModel.updateTheme(theme)
@@ -350,6 +368,9 @@ fun SettingsScreen(
 
 @Composable
 fun SectionHeader(title: String) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    
     Text(
         text = title,
         modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
@@ -369,6 +390,12 @@ fun SettingToggleItem(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val PrimaryGreen = if (isDark) MaterialTheme.colorScheme.primary else com.pralayakaveri.medisave.ui.theme.PrimaryGreen
+    val uncheckedTrackColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFEEEEEE)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -399,7 +426,7 @@ fun SettingToggleItem(
                 checkedThumbColor = Color.White,
                 checkedTrackColor = PrimaryGreen,
                 uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = Color(0xFFEEEEEE),
+                uncheckedTrackColor = uncheckedTrackColor,
                 uncheckedBorderColor = Color.Transparent
             )
         )
@@ -417,6 +444,12 @@ fun SettingClickableItem(
     isPro: Boolean = false,
     onClick: () -> Unit
 ) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val PrimaryGreen = if (isDark) MaterialTheme.colorScheme.primary else com.pralayakaveri.medisave.ui.theme.PrimaryGreen
+    val chevronColor = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFCCCCCC)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -462,9 +495,9 @@ fun SettingClickableItem(
                 fontWeight = if (trailingTextColor != TextSecondary) FontWeight.Bold else FontWeight.Normal
             )
             Spacer(Modifier.width(8.dp))
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFCCCCCC), modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = chevronColor, modifier = Modifier.size(16.dp))
         } else {
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFCCCCCC), modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = chevronColor, modifier = Modifier.size(16.dp))
         }
     }
 }

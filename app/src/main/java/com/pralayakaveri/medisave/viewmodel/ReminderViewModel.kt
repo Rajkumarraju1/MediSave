@@ -34,7 +34,7 @@ class ReminderViewModel(application: Application) : AndroidViewModel(application
     
     var pushNotificationEnabled = mutableStateOf(true)
     var caregiverAlertEnabled = mutableStateOf(true)
-    var gracePeriodMinutes = mutableStateOf(60)
+    var gracePeriodMinutes = mutableStateOf(30)
     var isStartTomorrow = mutableStateOf(false)
 
     private val _navigationEvent = MutableSharedFlow<Unit>()
@@ -134,7 +134,7 @@ class ReminderViewModel(application: Application) : AndroidViewModel(application
                 
                 // Need to update the medicine object with its new Firestore ID for unique scheduling
                 val medicineWithId = finalMedicine.copy(id = medId)
-                reminderManager.scheduleAlarmsForMedicine(medicineWithId, userId)
+                reminderManager.scheduleAlarmsForMedicine(medicineWithId, userId, cancelTodayEscalations = true)
                 
                 _navigationEvent.emit(Unit)
             } catch (e: Exception) {

@@ -333,6 +333,9 @@ fun FamilyConnectionScreen(
     onBack: () -> Unit,
     viewModel: ConnectionSearchViewModel = viewModel()
 ) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
     val context = LocalContext.current
     val inputCode by viewModel.inputCode.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
@@ -401,11 +404,12 @@ fun FamilyConnectionScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
+            val isDarkHeader = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
-                    .background(BrandingGreen)
+                    .background(if (isDarkHeader) MaterialTheme.colorScheme.surface else BrandingGreen)
                     .statusBarsPadding()
                     .padding(horizontal = 16.dp),
                 contentAlignment = Alignment.CenterStart
@@ -415,14 +419,14 @@ fun FamilyConnectionScreen(
                         onClick = onBack,
                         modifier = Modifier
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.2f))
+                            .background(if (isDarkHeader) MaterialTheme.colorScheme.background else Color.White.copy(alpha = 0.2f))
                     ) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = if (isDarkHeader) MaterialTheme.colorScheme.primary else Color.White)
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = "Enter connection code",
-                        color = Color.White,
+                        color = if (isDarkHeader) MaterialTheme.colorScheme.onSurface else Color.White,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -435,8 +439,7 @@ fun FamilyConnectionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
-                .imePadding(),
+                .background(MaterialTheme.colorScheme.background),
             contentPadding = PaddingValues(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -613,6 +616,7 @@ fun CodeInputSection(
     listState: LazyListState,
     keyboardController: androidx.compose.ui.platform.SoftwareKeyboardController?
 ) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -629,17 +633,27 @@ fun CodeInputSection(
                 val char = code.getOrNull(index)
                 val isActive = cursorIndex == index
                 val isFilled = char != null
+                val slotBgColor = if (isFilled) {
+                    if (isDark) MaterialTheme.colorScheme.secondaryContainer else FilledGreenBg
+                } else {
+                    if (isDark) MaterialTheme.colorScheme.surface else Color.White
+                }
+                val slotTextColor = if (isFilled) {
+                    if (isDark) MaterialTheme.colorScheme.primary else PrimaryGreen
+                } else {
+                    if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray
+                }
 
                 Surface(
                     modifier = Modifier.size(48.dp),
                     shape = RoundedCornerShape(12.dp),
-                    color = if (isFilled) FilledGreenBg else Color.White,
+                    color = slotBgColor,
                     border = BorderStroke(
                         width = 2.dp,
                         color = when {
                             isActive -> PrimaryGreen
                             isFilled -> PrimaryGreen.copy(alpha = 0.5f)
-                            else -> Color.Gray.copy(alpha = 0.3f)
+                            else -> if (isDark) MaterialTheme.colorScheme.outline else Color.Gray.copy(alpha = 0.3f)
                         }
                     )
                 ) {
@@ -648,7 +662,7 @@ fun CodeInputSection(
                             text = char?.toString() ?: if (isActive) "_" else "",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isFilled) PrimaryGreen else Color.LightGray
+                            color = slotTextColor
                         )
                     }
                 }
@@ -686,10 +700,13 @@ fun CodeInputSection(
 
 @Composable
 fun SearchingCard(code: String) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = StatusGrayBg
+        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant else StatusGrayBg
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -699,7 +716,7 @@ fun SearchingCard(code: String) {
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(Color.White),
+                    .background(if (isDark) MaterialTheme.colorScheme.surface else Color.White),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -729,10 +746,13 @@ fun SearchingCard(code: String) {
 
 @Composable
 fun FoundUserCard(user: UserEntity) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
+        color = if (isDark) MaterialTheme.colorScheme.surface else Color.White,
         border = BorderStroke(2.dp, PrimaryGreen)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -758,7 +778,7 @@ fun FoundUserCard(user: UserEntity) {
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Divider(color = Color.LightGray.copy(alpha = 0.3f))
+            HorizontalDivider(color = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color.LightGray.copy(alpha = 0.3f))
             Spacer(modifier = Modifier.height(16.dp))
             
             PermissionItem(isAllowed = true, text = "Medicine schedule access")
@@ -770,6 +790,8 @@ fun FoundUserCard(user: UserEntity) {
 
 @Composable
 fun PermissionItem(isAllowed: Boolean, text: String) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
     Row(
         modifier = Modifier.padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -787,6 +809,9 @@ fun PermissionItem(isAllowed: Boolean, text: String) {
 
 @Composable
 fun NotFoundCard(code: String, onTryAgain: () -> Unit, onWhatsApp: () -> Unit) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -809,7 +834,7 @@ fun NotFoundCard(code: String, onTryAgain: () -> Unit, onWhatsApp: () -> Unit) {
                     onClick = onTryAgain,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, Color.LightGray)
+                    border = BorderStroke(1.dp, if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray)
                 ) {
                     Text("Try again", color = TextPrimary)
                 }
@@ -834,6 +859,8 @@ fun RelationSelector(
     onRelationSelect: (String) -> Unit,
     onCustomRelationChange: (String) -> Unit
 ) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
     val relations = listOf("Mom", "Dad", "Spouse", "Child", "Sibling", "Caregiver", "Custom...")
     
     Column {
@@ -856,8 +883,8 @@ fun RelationSelector(
                 Surface(
                     modifier = Modifier.clickable { onRelationSelect(relation) },
                     shape = RoundedCornerShape(50),
-                    color = if (isSelected) BrandingGreen else Color.White,
-                    border = if (isSelected) null else BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.6f))
+                    color = if (isSelected) BrandingGreen else if (isDark) MaterialTheme.colorScheme.surface else Color.White,
+                    border = if (isSelected) null else BorderStroke(1.dp, if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray.copy(alpha = 0.6f))
                 ) {
                     Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                         Text(

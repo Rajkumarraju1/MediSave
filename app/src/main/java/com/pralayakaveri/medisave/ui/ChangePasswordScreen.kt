@@ -1,6 +1,7 @@
 package com.pralayakaveri.medisave.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,19 +40,32 @@ fun ChangePasswordScreen(
     var currentVisible by remember { mutableStateOf(false) }
     var newVisible by remember { mutableStateOf(false) }
     var confirmVisible by remember { mutableStateOf(false) }
+
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val primaryColor = if (isDark) MaterialTheme.colorScheme.primary else BrandingGreen
     
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Change Password", fontWeight = FontWeight.Bold) },
+                title = { Text("Change Password", fontWeight = FontWeight.Bold, color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Back", modifier = Modifier.size(20.dp))
+                        Icon(
+                            Icons.Default.ArrowBackIosNew,
+                            contentDescription = "Back",
+                            modifier = Modifier.size(20.dp),
+                            tint = TextPrimary
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = if (isDark) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surface
+                )
             )
         },
-        containerColor = Color(0xFFF9F9F9)
+        containerColor = if (isDark) MaterialTheme.colorScheme.background else Color(0xFFF9F9F9)
     ) { padding ->
         Column(
             modifier = Modifier
@@ -63,13 +77,14 @@ fun ChangePasswordScreen(
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        shape = RoundedCornerShape(20.dp)
+                        colors = CardDefaults.cardColors(containerColor = if (isDark) MaterialTheme.colorScheme.surface else Color.White),
+                        shape = RoundedCornerShape(20.dp),
+                        border = if (isDark) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null
                     ) {
                         Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.Lock, contentDescription = null, tint = BrandingGreen, modifier = Modifier.size(48.dp))
+                            Icon(Icons.Default.Lock, contentDescription = null, tint = primaryColor, modifier = Modifier.size(48.dp))
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text("Password managed by Google", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            Text("Password managed by Google", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = TextPrimary)
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 "Since you signed in with Google, your password is managed through your Google Account security settings.",
@@ -97,10 +112,17 @@ fun ChangePasswordScreen(
                     visualTransformation = if (currentVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { currentVisible = !currentVisible }) {
-                            Icon(if (currentVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
+                            Icon(if (currentVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null, tint = TextSecondary)
                         }
                     },
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BrandingGreen, focusedLabelColor = BrandingGreen)
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = primaryColor,
+                        unfocusedBorderColor = if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray,
+                        focusedLabelColor = primaryColor,
+                        unfocusedLabelColor = TextSecondary,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary
+                    )
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -114,10 +136,17 @@ fun ChangePasswordScreen(
                     visualTransformation = if (newVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { newVisible = !newVisible }) {
-                            Icon(if (newVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
+                            Icon(if (newVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null, tint = TextSecondary)
                         }
                     },
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BrandingGreen, focusedLabelColor = BrandingGreen)
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = primaryColor,
+                        unfocusedBorderColor = if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray,
+                        focusedLabelColor = primaryColor,
+                        unfocusedLabelColor = TextSecondary,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary
+                    )
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -131,10 +160,17 @@ fun ChangePasswordScreen(
                     visualTransformation = if (confirmVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { confirmVisible = !confirmVisible }) {
-                            Icon(if (confirmVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
+                            Icon(if (confirmVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null, tint = TextSecondary)
                         }
                     },
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = BrandingGreen, focusedLabelColor = BrandingGreen)
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = primaryColor,
+                        unfocusedBorderColor = if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray,
+                        focusedLabelColor = primaryColor,
+                        unfocusedLabelColor = TextSecondary,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary
+                    )
                 )
                 
                 Spacer(modifier = Modifier.weight(1f))
@@ -150,13 +186,21 @@ fun ChangePasswordScreen(
                         .fillMaxWidth()
                         .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BrandingGreen),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = primaryColor,
+                        disabledContainerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFE0E0E0)
+                    ),
                     enabled = !isLoading && currentPassword.isNotBlank() && newPassword.length >= 6 && newPassword == confirmPassword
                 ) {
                     if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = if (isDark) MaterialTheme.colorScheme.onPrimary else Color.White)
                     } else {
-                        Text("Update Password", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(
+                            "Update Password",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = if (isDark) MaterialTheme.colorScheme.onPrimary else Color.White
+                        )
                     }
                 }
             }

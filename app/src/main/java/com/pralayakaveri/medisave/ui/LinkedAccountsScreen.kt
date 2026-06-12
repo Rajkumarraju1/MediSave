@@ -1,6 +1,7 @@
 package com.pralayakaveri.medisave.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,19 +29,32 @@ fun LinkedAccountsScreen(
     val providers = viewModel.getProviders()
     val isGoogleLinked = providers.contains("google.com")
     val isEmailLinked = providers.contains("password")
+
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val primaryColor = if (isDark) MaterialTheme.colorScheme.primary else BrandingGreen
     
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Linked Accounts", fontWeight = FontWeight.Bold) },
+                title = { Text("Linked Accounts", fontWeight = FontWeight.Bold, color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Back", modifier = Modifier.size(20.dp))
+                        Icon(
+                            Icons.Default.ArrowBackIosNew,
+                            contentDescription = "Back",
+                            modifier = Modifier.size(20.dp),
+                            tint = TextPrimary
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = if (isDark) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surface
+                )
             )
         },
-        containerColor = Color(0xFFF9F9F9)
+        containerColor = if (isDark) MaterialTheme.colorScheme.background else Color(0xFFF9F9F9)
     ) { padding ->
         Column(
             modifier = Modifier
@@ -72,17 +86,19 @@ fun LinkedAccountsScreen(
             Spacer(modifier = Modifier.height(32.dp))
             
             if (providers.size == 1) {
+                val warningBg = if (isDark) Color(0xFF2C220E) else Color(0xFFFFF8E1)
+                val warningText = if (isDark) Color(0xFFFFB74D) else Color(0xFFF57C00)
                 Surface(
-                    color = Color(0xFFFFF8E1),
+                    color = warningBg,
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Link, contentDescription = null, tint = Color(0xFFF57C00))
+                        Icon(Icons.Default.Link, contentDescription = null, tint = warningText)
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             "You must have at least one login method linked to prevent losing access to your account.",
                             fontSize = 12.sp,
-                            color = Color(0xFFF57C00).copy(alpha = 0.9f)
+                            color = warningText.copy(alpha = 0.9f)
                         )
                     }
                 }
@@ -93,10 +109,15 @@ fun LinkedAccountsScreen(
 
 @Composable
 fun LinkedAccountItem(name: String, isLinked: Boolean, canUnlink: Boolean) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val primaryColor = if (isDark) MaterialTheme.colorScheme.primary else BrandingGreen
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = if (isDark) MaterialTheme.colorScheme.surface else Color.White),
+        border = if (isDark) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -105,13 +126,18 @@ fun LinkedAccountItem(name: String, isLinked: Boolean, canUnlink: Boolean) {
             Surface(
                 modifier = Modifier.size(40.dp),
                 shape = CircleShape,
-                color = if (isLinked) BrandingGreen.copy(alpha = 0.1f) else Color(0xFFF5F5F5)
+                color = if (isLinked) primaryColor.copy(alpha = 0.1f) else (if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFF5F5F5))
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     if (isLinked) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = BrandingGreen, modifier = Modifier.size(24.dp))
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = primaryColor, modifier = Modifier.size(24.dp))
                     } else {
-                        Icon(Icons.Default.Link, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+                        Icon(
+                            Icons.Default.Link,
+                            contentDescription = null,
+                            tint = if (isDark) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f) else Color.Gray,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
             }
@@ -119,8 +145,12 @@ fun LinkedAccountItem(name: String, isLinked: Boolean, canUnlink: Boolean) {
             Spacer(modifier = Modifier.width(16.dp))
             
             Column(modifier = Modifier.weight(1f)) {
-                Text(name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(if (isLinked) "Linked" else "Not Linked", fontSize = 12.sp, color = if (isLinked) BrandingGreen else TextSecondary)
+                Text(name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextPrimary)
+                Text(
+                    if (isLinked) "Linked" else "Not Linked",
+                    fontSize = 12.sp,
+                    color = if (isLinked) primaryColor else TextSecondary
+                )
             }
             
             if (isLinked && canUnlink) {
@@ -129,7 +159,7 @@ fun LinkedAccountItem(name: String, isLinked: Boolean, canUnlink: Boolean) {
                 }
             } else if (!isLinked) {
                 TextButton(onClick = { /* TODO: Link logic */ }) {
-                    Text("Link", color = BrandingGreen)
+                    Text("Link", color = primaryColor)
                 }
             }
         }

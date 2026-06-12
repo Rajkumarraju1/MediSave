@@ -231,7 +231,9 @@ exports.checkMissedDoses = onSchedule({
             const data = medDoc.data();
             const patientUid = medDoc.ref.parent.parent.id;
             const medicineId = medDoc.id;
-            const { timezone, times, statusMap, name, repeatDays, gracePeriodMinutes = 60, caregiverAlertEnabled = true, notifiedMap = {} } = data;
+            const { timezone, times, statusMap, name, repeatDays, gracePeriodMinutes = 10, caregiverAlertEnabled = true, notifiedMap = {} } = data;
+            
+            logger.info(`[TIMING_TELEMETRY] Watchdog Evaluation | name: ${name} | nextCheckAt: ${data.nextCheckAt} | gracePeriodMinutes: ${gracePeriodMinutes} | candidate selection reason: nextCheckAt <= nowMillis (${data.nextCheckAt} <= ${nowMillis})`);
             
             const userNow = DateTime.now().setZone(timezone || "Asia/Kolkata");
             const todayStr = userNow.toFormat("yyyy-MM-dd");
@@ -248,6 +250,8 @@ exports.checkMissedDoses = onSchedule({
                     const [hour, minute] = time.split(":").map(Number);
                     const doseTime = userNow.set({ hour, minute, second: 0, millisecond: 0 });
                     const diffMinutes = userNow.diff(doseTime, "minutes").minutes;
+                    
+                    logger.info(`[TIMING_TELEMETRY] Dose check for ${name} at ${time} | diffMinutes: ${Math.round(diffMinutes)} | gracePeriodMinutes: ${gracePeriodMinutes}`);
                     
                     if (diffMinutes >= gracePeriodMinutes) {
                         const logId = getLogId(patientUid, medicineId, todayStr, time);
@@ -301,7 +305,7 @@ exports.checkMissedDoses = onSchedule({
  * Server-side helper to calculate the next check time
  */
 function calculateNextCheckAtServer(medicine, userNow) {
-    const { times, statusMap, repeatDays, gracePeriodMinutes = 60 } = medicine;
+    const { times, statusMap, repeatDays, gracePeriodMinutes = 10 } = medicine;
     const today = userNow;
     
     for (let i = 0; i <= 1; i++) {

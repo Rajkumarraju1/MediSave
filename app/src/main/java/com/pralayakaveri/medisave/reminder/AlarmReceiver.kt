@@ -54,38 +54,44 @@ class AlarmReceiver : BroadcastReceiver() {
         val isSnooze = intent.getBooleanExtra("IS_SNOOZE", false)
         val snoozeDuration = intent.getIntExtra("SNOOZE_DURATION", 10)
 
-        val pendingResult = goAsync()
+        val pendingResult: BroadcastReceiver.PendingResult? = goAsync()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
         scope.launch {
             try {
+                Log.d("AlarmReceiver", "[ALARM_FLOW] FIRED: Action=$action, MedicineId=$medicineId, Time=$reminderTime, Date=$reminderDate, isSnooze=$isSnooze")
                 when (action) {
                     ACTION_MARK_TAKEN -> {
+                        Log.d("AlarmReceiver", "[ALARM_FLOW] ACTION: Mark as Taken for $medicineId at $reminderTime")
                         handleMarkAsTaken(context, userId, medicineId, reminderDate, reminderTime)
                     }
                     ACTION_SNOOZE -> {
+                        Log.d("AlarmReceiver", "[ALARM_FLOW] ACTION: Snooze ($snoozeDuration min) for $medicineId at $reminderTime")
                         handleSnooze(context, userId, medicineId, medicineName, dose, reminderDate, reminderTime, snoozeDuration)
                     }
                     ACTION_CHECK_MISSED, ACTION_TRIGGER_MISSED -> {
+                        Log.d("AlarmReceiver", "[ALARM_FLOW] ACTION: Check Missed for $medicineId at $reminderTime")
                         handleCheckMissed(context, userId, medicineId, medicineName, reminderDate, reminderTime)
                     }
                     ACTION_TRIGGER_NUDGE -> {
                         val stage = intent.getIntExtra("NUDGE_STAGE", 1)
+                        Log.d("AlarmReceiver", "[ALARM_FLOW] ACTION: Nudge Stage $stage for $medicineId at $reminderTime")
                         handleNudgeCheck(context, userId, medicineId, medicineName, reminderDate, reminderTime, stage)
                     }
                     else -> {
+                        Log.d("AlarmReceiver", "[ALARM_FLOW] ACTION: Primary Alarm Fired for $medicineId at $reminderTime")
                         // Generic alarm trigger -> Show Notification
                         showNotification(context, userId, medicineId, medicineName, dose, reminderDate, reminderTime)
                         // Reschedule next occurrence for this medicine slot if it's the main alarm
                         if (!isSnooze) {
-                            rescheduleNext(context, userId, medicineId)
+                            rescheduleNext(context, userId, medicineId, reminderTime)
                         }
                     }
                 }
             } catch (e: Exception) {
                 Log.e("AlarmReceiver", "Error in AlarmReceiver processing inside goAsync scope", e)
             } finally {
-                pendingResult.finish()
+                pendingResult?.finish()
                 scope.cancel()
             }
         }
@@ -113,7 +119,10 @@ class AlarmReceiver : BroadcastReceiver() {
         }
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.cancel((medicineId + time).hashCode())
+        val cancelId = (medicineId + time).hashCode()
+        Log.d("AlarmReceiver", "[ALARM_FLOW] CANCELLING reminder notification inside handleSnooze for $medicineId at $time (ID: $cancelId) via NotificationManager.cancel()")
+        notificationManager.cancel(cancelId)
+        Log.d("AlarmReceiver", "[ALARM_FLOW] Cancelled reminder notification inside handleSnooze for $medicineId at $time (ID: $cancelId) successfully")
 
         // Show Toast response to user with exact time on the Main Thread
         withContext(Dispatchers.Main) {
@@ -179,8 +188,14 @@ class AlarmReceiver : BroadcastReceiver() {
 
     private suspend fun handleMarkAsTaken(context: Context, userId: String, medicineId: String, date: String, time: String) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        // Cancel the notification using the unique hash of medicineId + time
-        notificationManager.cancel((medicineId + time).hashCode())
+        val cancelId = (medicineId + time).hashCode()
+        Log.d("AlarmReceiver", "[ALARM_FLOW] CANCELLING reminder notification inside handleMarkAsTaken for $medicineId at $time (ID: $cancelId) via NotificationManager.cancel()")
+        notificationManager.cancel(cancelId)
+        Log.d("AlarmReceiver", "[ALARM_FLOW] Cancelled reminder notification inside handleMarkAsTaken for $medicineId at $time (ID: $cancelId) successfully")
+
+        val missedId = (medicineId + time + "MISSED").hashCode()
+        Log.d("AlarmReceiver", "[ALARM_FLOW] CANCELLING missed notification inside handleMarkAsTaken for $medicineId at $time (ID: $missedId) via NotificationManager.cancel()")
+        notificationManager.cancel(missedId)
 
         if (userId.isEmpty() || time.isEmpty()) return
 
@@ -255,32 +270,58 @@ class AlarmReceiver : BroadcastReceiver() {
         val graceMs = medicine.gracePeriodMinutes * 60 * 1000L
         val isGracePeriodPassed = currentTimeMs >= (scheduledTimeMs + graceMs - 5000L)
 
-        if (currentStatus == DoseStatus.PENDING.name && isGracePeriodPassed) {
+        val isEligibleForMissedTrigger = currentStatus == DoseStatus.PENDING.name || currentStatus == DoseStatus.MISSED.name
+
+        if (isEligibleForMissedTrigger && isGracePeriodPassed) {
             val repository = MedicineRepository(context.applicationContext)
             try {
-                Log.d("AlarmReceiver", "CRITICAL: Marking MISSED for $name at $time (Grace passed: ${medicine.gracePeriodMinutes}m)")
+                Log.d("AlarmReceiver", "[ALARM_FLOW] CRITICAL: Marking MISSED for $name at $time (Grace passed: ${medicine.gracePeriodMinutes}m)")
                 repository.updateMedicineStatus(userId, medicineId, date, time, DoseStatus.MISSED.name)
                 
                 val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                notificationManager.cancel((medicineId + time).hashCode())
+                val targetReminderId = (medicineId + time).hashCode()
+                Log.d("AlarmReceiver", "[ALARM_FLOW] CANCELLING reminder notification inside handleCheckMissed for $name at $time (ID: $targetReminderId) via NotificationManager.cancel()")
+                notificationManager.cancel(targetReminderId)
+                Log.d("AlarmReceiver", "[ALARM_FLOW] Cancelled reminder notification inside handleCheckMissed for $name at $time (ID: $targetReminderId) successfully")
                 
-                // Only show local notification if push notifications are enabled and missed alerts are enabled in settings
-                val prefManager = com.pralayakaveri.medisave.data.PreferenceManager(context)
-                val pushEnabled = prefManager.pushNotificationsEnabled.firstOrNull() ?: true
-                val isAlertEnabled = prefManager.missedDoseAlertEnabled.firstOrNull() ?: true
-                
-                if (pushEnabled && isAlertEnabled) {
-                    showMissedNotification(context, medicineId, name, time)
+                val statusKey = "${date}_${time}_MISSED"
+                if (!medicine.notifiedMap.containsKey(statusKey)) {
+                    // Only show local notification if push notifications are enabled and missed alerts are enabled in settings
+                    val prefManager = com.pralayakaveri.medisave.data.PreferenceManager(context)
+                    val pushEnabled = prefManager.pushNotificationsEnabled.firstOrNull() ?: true
+                    val isAlertEnabled = prefManager.missedDoseAlertEnabled.firstOrNull() ?: true
+                    
+                    if (pushEnabled && isAlertEnabled) {
+                        showMissedNotification(context, userId, medicineId, name, date, time)
+                    }
+
+                    // Write the MISSED notification key to notifiedMap immediately
+                    val latestMedicine = db.medicineReminderDao().getById(medicineId)?.toMedicine() ?: medicine
+                    val updatedNotifiedMap = latestMedicine.notifiedMap.toMutableMap().apply {
+                        this[statusKey] = System.currentTimeMillis()
+                    }
+                    val updatedEntity = com.pralayakaveri.medisave.data.MedicineReminderEntity.fromMedicine(latestMedicine).copy(
+                        notifiedMap = updatedNotifiedMap,
+                        syncPending = true
+                    )
+                    db.medicineReminderDao().insert(updatedEntity)
+                    
+                    // Trigger WorkManager for FireStore Sync Retryability
+                    com.pralayakaveri.medisave.work.WorkScheduler.scheduleSyncWorker(context)
+                    Log.d("AlarmReceiver", "[ALARM_FLOW] POSTED and recorded MISSED notification key $statusKey in notifiedMap")
+                } else {
+                    Log.d("AlarmReceiver", "[ALARM_FLOW] Suppressing duplicate Missed notification for $name at $time. Already present in notifiedMap.")
                 }
             } catch (e: Exception) {
                 Log.e("AlarmReceiver", "Failed to mark missed dose for $name", e)
             }
         } else {
-            Log.d("AlarmReceiver", "Check missed skipped for $name: Status=$currentStatus, GracePassed=$isGracePeriodPassed")
+            Log.d("AlarmReceiver", "[ALARM_FLOW] Check missed skipped for $name: Status=$currentStatus, GracePassed=$isGracePeriodPassed")
         }
     }
 
-    private suspend fun showMissedNotification(context: Context, medicineId: String, name: String, time: String) {
+
+    private suspend fun showMissedNotification(context: Context, userId: String, medicineId: String, name: String, date: String, time: String) {
         // Setting behavior integrity guard: abort if push notifications or missed alerts are disabled in settings
         val prefManager = com.pralayakaveri.medisave.data.PreferenceManager(context)
         val pushEnabled = prefManager.pushNotificationsEnabled.firstOrNull() ?: true
@@ -311,16 +352,63 @@ class AlarmReceiver : BroadcastReceiver() {
             notificationManager.createNotificationChannel(channel)
         }
 
+        // Fetch medicine reminder entity dynamically to read dose property
+        val db = AppDatabase.getDatabase(context)
+        val medicineEntity = db.medicineReminderDao().getById(medicineId) ?: return
+        val medicine = medicineEntity.toMedicine()
+        val dose = medicine.dose
+
+        // Functional "Mark as Taken" intent for retrospective Taken action from missed card
+        val takenIntent = Intent(context, AlarmReceiver::class.java).apply {
+            action = ACTION_MARK_TAKEN
+            putExtra("USER_ID", userId)
+            putExtra("MEDICINE_ID", medicineId)
+            putExtra("REMINDER_TIME", time)
+            putExtra("REMINDER_DATE", date)
+        }
+
+        val takenPendingIntent = PendingIntent.getBroadcast(
+            context,
+            (medicineId + time).hashCode() + 4, // Unique request code
+            takenIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Functional "View Details" intent for deep-link check details
+        val viewIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("TARGET_MEDICINE_ID", medicineId)
+        }
+
+        val viewPendingIntent = PendingIntent.getActivity(
+            context,
+            (medicineId + time).hashCode() + 5, // Unique request code
+            viewIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val formattedContent = buildString {
+            append("$name • $dose was not marked as taken.")
+            append("\n\n🕒 Scheduled: ${com.pralayakaveri.medisave.util.formatTime(time)}")
+            append("\n\n📝 Please update the status.")
+        }
+
         val builder = NotificationCompat.Builder(context, missedChannelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_alert) // using standard alert icon
-            .setContentTitle("Missed dose")
-            .setContentText("$name was not taken")
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentTitle("❌ Dose missed")
+            .setContentText("$name • $dose was not marked as taken.")
+            .setStyle(NotificationCompat.BigTextStyle().bigText(formattedContent))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
+            .addAction(android.R.drawable.ic_menu_save, "✓ Taken", takenPendingIntent)
+            .addAction(android.R.drawable.ic_menu_info_details, "📋 View Details", viewPendingIntent)
 
-        notificationManager.notify((medicineId + time + "MISSED").hashCode(), builder.build())
+        val notificationId = (medicineId + time + "MISSED").hashCode()
+        Log.d("AlarmReceiver", "[ALARM_FLOW] showMissedNotification() executing: posting Missed Notification for $name at $time (ID: $notificationId) via NotificationManager.notify()")
+        notificationManager.notify(notificationId, builder.build())
+        Log.d("AlarmReceiver", "[ALARM_FLOW] POSTED: Missed Notification for $name (ID: $notificationId) successfully")
     }
 
     private suspend fun showNotification(context: Context, userId: String, medicineId: String, name: String, dose: String, date: String, time: String) {
@@ -334,7 +422,8 @@ class AlarmReceiver : BroadcastReceiver() {
 
         // Ghost-alert safety net: abort silently if medicine was deleted
         val db = AppDatabase.getDatabase(context)
-        if (db.medicineReminderDao().getById(medicineId) == null) {
+        val medicineEntity = db.medicineReminderDao().getById(medicineId)
+        if (medicineEntity == null) {
             Log.w("AlarmReceiver", "showNotification: medicine $medicineId no longer exists — suppressing notification")
             return
         }
@@ -382,15 +471,26 @@ class AlarmReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val medicine = medicineEntity.toMedicine()
+        val instruction = medicine.instruction
+        val formattedContent = buildString {
+            append("$name • $dose")
+            if (!instruction.isNullOrBlank()) {
+                append("\n\n📝 $instruction")
+            }
+            append("\n\n🕒 Scheduled: ${com.pralayakaveri.medisave.util.formatTime(time)}")
+        }
+
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle("Time to take medicine")
+            .setContentTitle("💊 Time for your medicine")
             .setContentText("$name • $dose")
+            .setStyle(NotificationCompat.BigTextStyle().bigText(formattedContent))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(true)
             .setContentIntent(contentPendingIntent)
-            .addAction(android.R.drawable.ic_menu_save, "Mark as Taken", takenPendingIntent)
+            .addAction(android.R.drawable.ic_menu_save, "✓ Taken", takenPendingIntent)
 
         // Add Snooze 10m
         val snooze10Intent = Intent(context, AlarmReceiver::class.java).apply {
@@ -409,7 +509,7 @@ class AlarmReceiver : BroadcastReceiver() {
             snooze10Intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        builder.addAction(android.R.drawable.ic_popup_reminder, "Snooze 10m", snooze10PendingIntent)
+        builder.addAction(android.R.drawable.ic_popup_reminder, "⏰ Snooze 10m", snooze10PendingIntent)
 
         // Add Snooze 30m
         val snooze30Intent = Intent(context, AlarmReceiver::class.java).apply {
@@ -428,9 +528,12 @@ class AlarmReceiver : BroadcastReceiver() {
             snooze30Intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        builder.addAction(android.R.drawable.ic_popup_reminder, "Snooze 30m", snooze30PendingIntent)
+        builder.addAction(android.R.drawable.ic_popup_reminder, "⏰ Snooze 30m", snooze30PendingIntent)
 
-        notificationManager.notify((medicineId + time).hashCode(), builder.build())
+        val notificationId = (medicineId + time).hashCode()
+        Log.d("AlarmReceiver", "[ALARM_FLOW] showNotification() executing: posting Primary Notification for $name at $time (ID: $notificationId) via NotificationManager.notify()")
+        notificationManager.notify(notificationId, builder.build())
+        Log.d("AlarmReceiver", "[ALARM_FLOW] POSTED: Primary Notification for $name • $dose (ID: $notificationId) successfully")
         
         // Schedule multi-stage reminders
         scheduleNudgeCheck(context, userId, medicineId, name, date, time)
@@ -502,7 +605,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 } else {
                     alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
                 }
-                Log.d("AlarmReceiver", "Scheduled Exact Nudge stage $stage for $name at $date $time (in ${delayMinutes}m)")
+                Log.d("AlarmReceiver", "[ALARM_FLOW] SCHEDULED: Nudge Stage $stage for $name at $date $time (Trigger in ${delayMinutes}m, RequestCode: $requestCode)")
             } catch (e: Exception) {
                 Log.e("AlarmReceiver", "Error scheduling exact nudge stage $stage", e)
             }
@@ -529,7 +632,13 @@ class AlarmReceiver : BroadcastReceiver() {
         }
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        
+
+        // Fetch medicine reminder entity dynamically to read dose and instruction properties
+        val db = AppDatabase.getDatabase(context)
+        val medicineEntity = db.medicineReminderDao().getById(medicineId) ?: return
+        val medicine = medicineEntity.toMedicine()
+        val instruction = medicine.instruction
+
         // Create channel if needed (Android 13+ Escalation Compliance)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -537,7 +646,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 "Medicine Nudges",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "High priority follow-up nudges for outstanding medicines."
+                description = "High priority follow-up nudges for outstanding medications."
             }
             notificationManager.createNotificationChannel(channel)
         }
@@ -576,19 +685,31 @@ class AlarmReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val formattedContent = buildString {
+            append("$name • ${medicine.dose}")
+            if (!instruction.isNullOrBlank()) {
+                append("\n\n📝 $instruction")
+            }
+            append("\n\n🕒 Scheduled: ${com.pralayakaveri.medisave.util.formatTime(time)}")
+            append("\n\n⏳ This dose is still awaiting confirmation.")
+        }
+
         val builder = NotificationCompat.Builder(context, NUDGE_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
-            .setContentTitle("Gentle Reminder")
-            .setContentText("Hey, it’s time to take your $name")
+            .setContentTitle("🔔 Medication still pending")
+            .setContentText("$name • ${medicine.dose}")
+            .setStyle(NotificationCompat.BigTextStyle().bigText(formattedContent))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(true)
-            .addAction(android.R.drawable.ic_menu_save, "Mark as Taken", takenPendingIntent)
-            .addAction(android.R.drawable.ic_popup_reminder, "Snooze 5m", snoozePendingIntent)
+            .addAction(android.R.drawable.ic_menu_save, "✓ Taken", takenPendingIntent)
+            .addAction(android.R.drawable.ic_popup_reminder, "⏰ Snooze 5m", snoozePendingIntent)
 
         // Use same ID as Alarm to REPLACE it
         val notificationId = (medicineId + time).hashCode()
+        Log.d("AlarmReceiver", "[ALARM_FLOW] showNudgeNotification() executing: replacing notification with Nudge Stage $stage for $name at $time (ID: $notificationId) via NotificationManager.notify()")
         notificationManager.notify(notificationId, builder.build())
-        Log.d("AlarmReceiver", "Nudge notification stage $stage displayed for $name")
+        Log.d("AlarmReceiver", "[ALARM_FLOW] POSTED: Nudge Stage $stage Notification for $name (ID: $notificationId) successfully")
     }
 
     private suspend fun scheduleMissedCheck(context: Context, userId: String, medicineId: String, name: String, date: String, time: String, extraDelayMin: Int = 0) {
@@ -641,20 +762,21 @@ class AlarmReceiver : BroadcastReceiver() {
             } else {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
             }
-            Log.d("AlarmReceiver", "Scheduled Exact Missed Check for $name at $date $time (Grace: ${gracePeriod}m)")
+            Log.d("AlarmReceiver", "[ALARM_FLOW] SCHEDULED: Missed Check for $name at $date $time (Trigger in ${gracePeriod}m, RequestCode: $requestCode)")
         } catch (e: Exception) {
             Log.e("AlarmReceiver", "Error scheduling exact missed check", e)
         }
     }
 
-    private suspend fun rescheduleNext(context: Context, userId: String, medicineId: String) {
-        if (userId.isEmpty()) return
+    private suspend fun rescheduleNext(context: Context, userId: String, medicineId: String, reminderTime: String) {
+        if (userId.isEmpty() || reminderTime.isEmpty()) return
+        Log.d("AlarmReceiver", "[ALARM_FLOW] RESCHEDULE TRIGGERED: Rescheduling primary alarm for $medicineId at slot $reminderTime")
         
         val db = AppDatabase.getDatabase(context)
         val medicineEntity = db.medicineReminderDao().getById(medicineId)
         if (medicineEntity != null) {
             val reminderManager = ReminderManager(context)
-            reminderManager.scheduleAlarmsForMedicine(medicineEntity.toMedicine(), userId)
+            reminderManager.scheduleAlarm(medicineEntity.toMedicine(), reminderTime, userId)
         }
     }
 }

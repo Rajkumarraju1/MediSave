@@ -84,7 +84,9 @@ fun ConnectionSuccessScreen(
         }
     }
 
-    Scaffold(containerColor = Color.White) { padding ->
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+
+    Scaffold(containerColor = if (isDark) MaterialTheme.colorScheme.background else Color.White) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when (val state = viewModel.uiState) {
                 is SuccessUiState.Loading -> {
@@ -113,6 +115,12 @@ fun SuccessContent(
     onBack: () -> Unit
 ) {
     val displayRelation = state.relation.lowercase().replaceFirstChar { it.uppercase() }
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val PrimaryGreen = if (isDark) MaterialTheme.colorScheme.primary else com.pralayakaveri.medisave.ui.theme.PrimaryGreen
+    val DividerGray = if (isDark) MaterialTheme.colorScheme.outlineVariant else com.pralayakaveri.medisave.ui.theme.DividerGray
+    val LightGrayBg = if (isDark) MaterialTheme.colorScheme.surface else com.pralayakaveri.medisave.ui.theme.LightGrayBg
     
     // AUTO-REDIRECT after 3 seconds
     LaunchedEffect(Unit) {
@@ -277,18 +285,25 @@ fun SuccessContent(
 
 @Composable
 fun StatBox(label: String, value: String, modifier: Modifier = Modifier, color: Color = Color.Black) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val defaultValColor = if (color == Color.Black) {
+        if (isDark) MaterialTheme.colorScheme.onBackground else Color.Black
+    } else color
+    val labelColor = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
+    val cardBg = if (isDark) MaterialTheme.colorScheme.surfaceVariant else Color.White
+
     Surface(
         modifier = modifier.height(80.dp),
         shape = RoundedCornerShape(16.dp),
-        color = Color.White
+        color = cardBg
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(8.dp)
         ) {
-            Text(text = value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = color)
-            Text(text = label, fontSize = 11.sp, color = Color.Gray, textAlign = TextAlign.Center, lineHeight = 14.sp)
+            Text(text = value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = defaultValColor)
+            Text(text = label, fontSize = 11.sp, color = labelColor, textAlign = TextAlign.Center, lineHeight = 14.sp)
         }
     }
 }

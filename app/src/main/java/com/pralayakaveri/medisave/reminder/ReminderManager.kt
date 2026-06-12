@@ -16,9 +16,9 @@ class ReminderManager(private val context: Context) {
     /**
      * Schedules alarms for all time slots of a medicine.
      */
-    fun scheduleAlarmsForMedicine(medicine: Medicine, userId: String) {
+    fun scheduleAlarmsForMedicine(medicine: Medicine, userId: String, cancelTodayEscalations: Boolean = false) {
         // Always cancel existing alarms for this medicine first to prevent duplicates
-        cancelAlarmsForMedicine(medicine)
+        cancelAlarmsForMedicine(medicine, cancelTodayEscalations)
 
         medicine.times.forEach { time ->
             scheduleAlarm(medicine, time, userId)
@@ -101,20 +101,21 @@ class ReminderManager(private val context: Context) {
                     pendingIntent
                 )
             }
-            Log.d("ReminderManager", "Scheduled alarm for ${medicine.name} at ${calendar.time}")
+            Log.d("ReminderManager", "[ALARM_FLOW] SCHEDULED: Primary Alarm for ${medicine.name} (${medicine.id}) at $time on $dateStr (RequestCode: $requestCode)")
         } catch (e: Exception) {
             Log.e("ReminderManager", "Error scheduling alarm", e)
         }
     }
 
-    fun cancelAlarmsForMedicine(medicine: Medicine) {
+    fun cancelAlarmsForMedicine(medicine: Medicine, cancelTodayEscalations: Boolean = false) {
+        Log.d("ReminderManager", "[ALARM_FLOW] cancelAlarmsForMedicine stacktrace (cancelTodayEscalations=$cancelTodayEscalations):", Throwable())
         val todayDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
         medicine.times.forEach { time ->
             // 1. Primary Recurring Alarm
             val pendingIntent = createPendingIntent(medicine.id, time)
             alarmManager.cancel(pendingIntent)
             pendingIntent.cancel()
-            Log.d("ReminderManager", "Cancelled recurring alarm for ${medicine.id} at $time")
+            Log.d("ReminderManager", "[ALARM_FLOW] CANCELLED: Recurring Primary Alarm for ${medicine.id} at $time (RequestCode: ${getRequestCode(medicine.id, time)})")
 
             // 2. Active Snooze Alarm
             val snoozeIntent = Intent(context, AlarmReceiver::class.java)
@@ -128,48 +129,54 @@ class ReminderManager(private val context: Context) {
             if (snoozePI != null) {
                 alarmManager.cancel(snoozePI)
                 snoozePI.cancel()
-                Log.d("ReminderManager", "Cancelled active snooze alarm for ${medicine.id} at $time")
+                Log.d("ReminderManager", "[ALARM_FLOW] CANCELLED: Active Snooze Alarm for ${medicine.id} at $time (RequestCode: $snoozeReqCode)")
             }
 
             // 3. Active Nudge Alarms (Stage 1 & 2)
-            for (stage in 1..2) {
-                val nudgeIntent = Intent(context, AlarmReceiver::class.java).apply {
-                    action = AlarmReceiver.ACTION_TRIGGER_NUDGE
-                }
-                val nudgeReqCode = (medicine.id + todayDate + time + "NUDGE_$stage").hashCode()
-                val nudgePI = PendingIntent.getBroadcast(
-                    context,
-                    nudgeReqCode,
-                    nudgeIntent,
-                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-                )
-                if (nudgePI != null) {
-                    alarmManager.cancel(nudgePI)
-                    nudgePI.cancel()
-                    Log.d("ReminderManager", "Cancelled active nudge stage $stage for ${medicine.id} at $todayDate $time")
+            if (cancelTodayEscalations) {
+                for (stage in 1..2) {
+                    val nudgeIntent = Intent(context, AlarmReceiver::class.java).apply {
+                        action = AlarmReceiver.ACTION_TRIGGER_NUDGE
+                    }
+                    val nudgeReqCode = (medicine.id + todayDate + time + "NUDGE_$stage").hashCode()
+                    val nudgePI = PendingIntent.getBroadcast(
+                        context,
+                        nudgeReqCode,
+                        nudgeIntent,
+                        PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    if (nudgePI != null) {
+                        alarmManager.cancel(nudgePI)
+                        nudgePI.cancel()
+                        Log.d("ReminderManager", "[ALARM_FLOW] CANCELLED: Active Nudge Stage $stage for ${medicine.id} at $todayDate $time (RequestCode: $nudgeReqCode)")
+                    }
                 }
             }
 
             // 4. Active Missed-Check Alarm
-            val missedIntent = Intent(context, AlarmReceiver::class.java).apply {
-                action = AlarmReceiver.ACTION_TRIGGER_MISSED
-            }
-            val missedReqCode = (medicine.id + todayDate + time + "MISSED").hashCode()
-            val missedPI = PendingIntent.getBroadcast(
-                context,
-                missedReqCode,
-                missedIntent,
-                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-            )
-            if (missedPI != null) {
-                alarmManager.cancel(missedPI)
-                missedPI.cancel()
-                Log.d("ReminderManager", "Cancelled active missed-check alarm for ${medicine.id} at $todayDate $time")
+            if (cancelTodayEscalations) {
+                val missedIntent = Intent(context, AlarmReceiver::class.java).apply {
+                    action = AlarmReceiver.ACTION_TRIGGER_MISSED
+                }
+                val missedReqCode = (medicine.id + todayDate + time + "MISSED").hashCode()
+                val missedPI = PendingIntent.getBroadcast(
+                    context,
+                    missedReqCode,
+                    missedIntent,
+                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+                )
+                if (missedPI != null) {
+                    alarmManager.cancel(missedPI)
+                    missedPI.cancel()
+                    Log.d("ReminderManager", "[ALARM_FLOW] CANCELLED: Active Missed-Check Alarm for ${medicine.id} at $todayDate $time (RequestCode: $missedReqCode)")
+                }
             }
         }
-        // Cancel all WorkManager tasks for this medicine
-        androidx.work.WorkManager.getInstance(context).cancelAllWorkByTag("MEDICINE_ID_${medicine.id}")
-        Log.d("ReminderManager", "Cancelled all background checks for ${medicine.id}")
+        // Cancel all WorkManager tasks for this medicine only when explicitly requested
+        if (cancelTodayEscalations) {
+            androidx.work.WorkManager.getInstance(context).cancelAllWorkByTag("MEDICINE_ID_${medicine.id}")
+            Log.d("ReminderManager", "Cancelled all background checks for ${medicine.id}")
+        }
     }
 
     private fun createPendingIntent(

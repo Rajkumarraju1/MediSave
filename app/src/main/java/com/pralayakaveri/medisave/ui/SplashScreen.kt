@@ -43,23 +43,27 @@ fun SplashScreen(
         }
     }
 
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val bg = if (isDark) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.primary
+    val contentColor = if (isDark) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.primary),
+            .background(bg),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "MediSave",
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = contentColor,
                 fontSize = 40.sp,
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 2.sp
             )
             Spacer(modifier = Modifier.height(24.dp))
             CircularProgressIndicator(
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = contentColor,
                 strokeWidth = 3.dp,
                 modifier = Modifier.size(36.dp)
             )

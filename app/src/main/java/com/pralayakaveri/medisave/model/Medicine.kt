@@ -91,7 +91,7 @@ data class Medicine(
                     val status = getStatusAt(dateStr, timeStr)
                     if (status == DoseStatus.PENDING.name) {
                         val doseTime = java.time.LocalTime.parse(timeStr)
-                        val checkTime = date.atTime(doseTime).atZone(anchorTime.zone).plusMinutes(30)
+                        val checkTime = date.atTime(doseTime).atZone(anchorTime.zone).plusMinutes(gracePeriodMinutes.toLong())
                         
                         // If this check time is in the future, it's our next target
                         if (checkTime.isAfter(anchorTime)) {

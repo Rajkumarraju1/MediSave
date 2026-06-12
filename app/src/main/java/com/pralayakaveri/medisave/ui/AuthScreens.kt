@@ -1,6 +1,7 @@
 package com.pralayakaveri.medisave.ui
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -87,7 +88,14 @@ fun LoginScreen(
         if (isLoggedIn) onLoginSuccess()
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primary)) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val bg = if (isDark) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.primary
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val primaryColor = if (isDark) MaterialTheme.colorScheme.primary else PrimaryGreen
+    val dividerColor = if (isDark) MaterialTheme.colorScheme.outlineVariant else DividerGray
+
+    Box(modifier = Modifier.fillMaxSize().background(bg)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(modifier = Modifier.height(60.dp))
             Box(
@@ -97,7 +105,11 @@ fun LoginScreen(
                     .background(Color.White.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Logo", tint = Color.White, modifier = Modifier.size(40.dp))
+                Image(
+                    painter = painterResource(id = com.pralayakaveri.medisave.R.drawable.logo_medisave_auth),
+                    contentDescription = "Logo",
+                    modifier = Modifier.size(65.dp)
+                )
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text("MediSave", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
@@ -116,7 +128,7 @@ fun LoginScreen(
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text("Welcome back", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                        Text("Sign in to your account", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        Text("Sign in to your account", fontSize = 14.sp, color = TextSecondary)
                     }
                     
                     Spacer(modifier = Modifier.height(32.dp))
@@ -127,14 +139,14 @@ fun LoginScreen(
                         label = { Text("EMAIL OR PHONE") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = primaryColor) },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary,
-                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                            focusedBorderColor = primaryColor,
+                            unfocusedBorderColor = if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray,
+                            focusedLabelColor = primaryColor,
+                            unfocusedLabelColor = TextSecondary,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
                         )
                     )
                     
@@ -147,26 +159,26 @@ fun LoginScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = primaryColor) },
                         trailingIcon = {
                             val icon = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                                Icon(icon, contentDescription = null, tint = TextSecondary)
                             }
                         },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary,
-                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                            focusedBorderColor = primaryColor,
+                            unfocusedBorderColor = if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray,
+                            focusedLabelColor = primaryColor,
+                            unfocusedLabelColor = TextSecondary,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
                         )
                     )
                     
                     Text(
                         "Forgot password?",
-                        color = MaterialTheme.colorScheme.primary,
+                        color = primaryColor,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.align(Alignment.End).padding(top = 8.dp).clickable { }
@@ -183,21 +195,24 @@ fun LoginScreen(
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         enabled = !isLoading,
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = primaryColor,
+                            disabledContainerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFE0E0E0)
+                        )
                     ) {
                         if (isLoading) {
-                            CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
+                            CircularProgressIndicator(color = if (isDark) MaterialTheme.colorScheme.onPrimary else Color.White, modifier = Modifier.size(24.dp))
                         } else {
-                            Text("Sign in", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text("Sign in", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = if (isDark) MaterialTheme.colorScheme.onPrimary else Color.White)
                         }
                     }
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        HorizontalDivider(modifier = Modifier.weight(1f), color = DividerGray)
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = dividerColor)
                         Text(" or continue with ", fontSize = 12.sp, color = TextSecondary, modifier = Modifier.padding(horizontal = 8.dp))
-                        HorizontalDivider(modifier = Modifier.weight(1f), color = DividerGray)
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = dividerColor)
                     }
                     
                     Spacer(modifier = Modifier.height(24.dp))
@@ -206,14 +221,19 @@ fun LoginScreen(
                         onClick = { launcher.launch(googleSignInClient.signInIntent) },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, DividerGray)
+                        border = BorderStroke(1.dp, dividerColor)
                     ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.AccountCircle, contentDescription = null, tint = PrimaryGreen, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text("Continue with Google", color = TextPrimary, fontWeight = FontWeight.Bold)
-                            }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                painter = painterResource(id = com.pralayakaveri.medisave.R.drawable.ic_google),
+                                contentDescription = null,
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text("Continue with Google", color = TextPrimary, fontWeight = FontWeight.Bold)
                         }
+                    }
                     
                     Spacer(modifier = Modifier.height(32.dp))
                     
@@ -230,7 +250,7 @@ fun LoginScreen(
                         Text("Don't have an account? ", color = TextSecondary, fontSize = 14.sp)
                         Text(
                             "Create one",
-                            color = PrimaryGreen,
+                            color = primaryColor,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.clickable { onNavigateToRegister() }
@@ -245,17 +265,21 @@ fun LoginScreen(
 
 @Composable
 fun FeatureChip(text: String) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val chipBg = if (isDark) MaterialTheme.colorScheme.secondaryContainer else TakenGreenBg
+    val chipText = if (isDark) MaterialTheme.colorScheme.onSecondaryContainer else PrimaryGreen
+    val dotColor = if (isDark) MaterialTheme.colorScheme.primary else PrimaryGreen
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(TakenGreenBg)
+            .background(chipBg)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(PrimaryGreen))
+            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(dotColor))
             Spacer(modifier = Modifier.width(6.dp))
-            Text(text, color = PrimaryGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(text, color = chipText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -276,7 +300,11 @@ fun RegisterScreen(
         if (isLoggedIn) onRegisterSuccess()
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primary)) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val bg = if (isDark) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.primary
+    val primaryColor = if (isDark) MaterialTheme.colorScheme.primary else PrimaryGreen
+
+    Box(modifier = Modifier.fillMaxSize().background(bg)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(modifier = Modifier.height(40.dp))
             Box(
@@ -286,7 +314,11 @@ fun RegisterScreen(
                     .background(Color.White.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Logo", tint = Color.White, modifier = Modifier.size(30.dp))
+                Image(
+                    painter = painterResource(id = com.pralayakaveri.medisave.R.drawable.logo_medisave_auth),
+                    contentDescription = "Logo",
+                    modifier = Modifier.size(30.dp)
+                )
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text("MediSave", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
@@ -305,8 +337,8 @@ fun RegisterScreen(
                 LinearProgressIndicator(
                     progress = progress,
                     modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape),
-                    color = Color.White,
-                    trackColor = Color.White.copy(alpha = 0.2f)
+                    color = if (isDark) primaryColor else Color.White,
+                    trackColor = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color.White.copy(alpha = 0.2f)
                 )
             }
 
@@ -356,6 +388,11 @@ fun RegisterStep1(
     var passwordVisible by remember { mutableStateOf(false) }
     var checked by remember { mutableStateOf(true) }
 
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val primaryColor = if (isDark) MaterialTheme.colorScheme.primary else PrimaryGreen
+
     Column(
         modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState())
     ) {
@@ -370,8 +407,15 @@ fun RegisterStep1(
             label = { Text("FULL NAME") },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = PrimaryGreen) },
-            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryGreen, focusedLabelColor = PrimaryGreen)
+            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = primaryColor) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = primaryColor,
+                unfocusedBorderColor = if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray,
+                focusedLabelColor = primaryColor,
+                unfocusedLabelColor = TextSecondary,
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -384,7 +428,14 @@ fun RegisterStep1(
             shape = RoundedCornerShape(12.dp),
             prefix = { Text("+91 ") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryGreen, focusedLabelColor = PrimaryGreen)
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = primaryColor,
+                unfocusedBorderColor = if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray,
+                focusedLabelColor = primaryColor,
+                unfocusedLabelColor = TextSecondary,
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -395,8 +446,15 @@ fun RegisterStep1(
             label = { Text("EMAIL") },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = PrimaryGreen) },
-            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryGreen, focusedLabelColor = PrimaryGreen)
+            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = primaryColor) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = primaryColor,
+                unfocusedBorderColor = if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray,
+                focusedLabelColor = primaryColor,
+                unfocusedLabelColor = TextSecondary,
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -408,12 +466,19 @@ fun RegisterStep1(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = PrimaryGreen) },
+            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = primaryColor) },
             trailingIcon = {
                 val icon = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
-                IconButton(onClick = { passwordVisible = !passwordVisible }) { Icon(icon, contentDescription = null) }
+                IconButton(onClick = { passwordVisible = !passwordVisible }) { Icon(icon, contentDescription = null, tint = TextSecondary) }
             },
-            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryGreen, focusedLabelColor = PrimaryGreen)
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = primaryColor,
+                unfocusedBorderColor = if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray,
+                focusedLabelColor = primaryColor,
+                unfocusedLabelColor = TextSecondary,
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary
+            )
         )
         
         if (password.isNotEmpty() && password.length < 8) {
@@ -426,7 +491,10 @@ fun RegisterStep1(
             Checkbox(
                 checked = checked,
                 onCheckedChange = { checked = it },
-                colors = CheckboxDefaults.colors(checkedColor = PrimaryGreen)
+                colors = CheckboxDefaults.colors(
+                    checkedColor = primaryColor,
+                    uncheckedColor = if (isDark) MaterialTheme.colorScheme.outline else Color.Gray
+                )
             )
             Text(
                 "I agree to the Terms of Service and Privacy Policy. My health data will never be sold.",
@@ -444,9 +512,12 @@ fun RegisterStep1(
             modifier = Modifier.fillMaxWidth().height(56.dp),
             enabled = name.isNotBlank() && email.isNotBlank() && password.length >= 8 && checked,
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+            colors = ButtonDefaults.buttonColors(
+                containerColor = primaryColor,
+                disabledContainerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFE0E0E0)
+            )
         ) {
-            Text("Continue →", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("Continue →", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = if (isDark) MaterialTheme.colorScheme.onPrimary else Color.White)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -480,6 +551,11 @@ fun RegisterStep2(
     var showAddDialog by remember { mutableStateOf(false) }
     var customConditionInput by remember { mutableStateOf("") }
 
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val primaryColor = if (isDark) MaterialTheme.colorScheme.primary else PrimaryGreen
+
     Column(
         modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState())
     ) {
@@ -496,7 +572,14 @@ fun RegisterStep2(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryGreen, focusedLabelColor = PrimaryGreen)
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = primaryColor,
+                    unfocusedBorderColor = if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray,
+                    focusedLabelColor = primaryColor,
+                    unfocusedLabelColor = TextSecondary,
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary
+                )
             )
             
             var expandedGen by remember { mutableStateOf(false) }
@@ -513,8 +596,11 @@ fun RegisterStep2(
                     label = { Text("GENDER") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedGen) },
                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = PrimaryGreen,
-                        focusedLabelColor = PrimaryGreen
+                        focusedBorderColor = primaryColor,
+                        focusedLabelColor = primaryColor,
+                        unfocusedBorderColor = if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary
                     ),
                     modifier = Modifier.menuAnchor(),
                     shape = RoundedCornerShape(12.dp)
@@ -525,7 +611,7 @@ fun RegisterStep2(
                 ) {
                     listOf("Male", "Female", "Other").forEach {
                         DropdownMenuItem(
-                            text = { Text(it) },
+                            text = { Text(it, color = TextPrimary) },
                             onClick = {
                                 gender = it
                                 expandedGen = false
@@ -557,8 +643,10 @@ fun RegisterStep2(
                     },
                     label = { Text(condition) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = TakenGreenBg,
-                        selectedLabelColor = PrimaryGreen
+                        selectedContainerColor = if (isDark) MaterialTheme.colorScheme.secondaryContainer else TakenGreenBg,
+                        selectedLabelColor = primaryColor,
+                        containerColor = if (isDark) MaterialTheme.colorScheme.surface else Color.White,
+                        labelColor = TextSecondary
                     ),
                     shape = RoundedCornerShape(50)
                 )
@@ -568,8 +656,11 @@ fun RegisterStep2(
                 onClick = { showAddDialog = true },
                 label = { Text("+ Add") },
                 shape = RoundedCornerShape(50),
-                colors = AssistChipDefaults.assistChipColors(labelColor = PrimaryGreen),
-                border = BorderStroke(1.dp, PrimaryGreen)
+                colors = AssistChipDefaults.assistChipColors(
+                    containerColor = if (isDark) MaterialTheme.colorScheme.surface else Color.White,
+                    labelColor = primaryColor
+                ),
+                border = BorderStroke(1.dp, primaryColor)
             )
         }
 
@@ -592,8 +683,11 @@ fun RegisterStep2(
                 shape = RoundedCornerShape(12.dp),
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLang) },
                 colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = PrimaryGreen,
-                    focusedLabelColor = PrimaryGreen
+                    focusedBorderColor = primaryColor,
+                    focusedLabelColor = primaryColor,
+                    unfocusedBorderColor = if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray,
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary
                 )
             )
             ExposedDropdownMenu(
@@ -602,7 +696,7 @@ fun RegisterStep2(
             ) {
                 listOf("English", "Hindi", "Marathi", "Tamil").forEach {
                     DropdownMenuItem(
-                        text = { Text(it) },
+                        text = { Text(it, color = TextPrimary) },
                         onClick = {
                             language = it
                             expandedLang = false
@@ -615,14 +709,20 @@ fun RegisterStep2(
         if (showAddDialog) {
             AlertDialog(
                 onDismissRequest = { showAddDialog = false },
-                title = { Text("Add Condition") },
+                title = { Text("Add Condition", color = TextPrimary) },
                 text = {
                     OutlinedTextField(
                         value = customConditionInput,
                         onValueChange = { customConditionInput = it },
                         placeholder = { Text("e.g. Arthritis") },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = primaryColor,
+                            unfocusedBorderColor = if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
+                        )
                     )
                 },
                 confirmButton = {
@@ -638,7 +738,7 @@ fun RegisterStep2(
                             showAddDialog = false
                         }
                     }) {
-                        Text("Add", color = PrimaryGreen)
+                        Text("Add", color = primaryColor)
                     }
                 },
                 dismissButton = {
@@ -660,12 +760,15 @@ fun RegisterStep2(
             modifier = Modifier.fillMaxWidth().height(56.dp),
             enabled = !isLoading,
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+            colors = ButtonDefaults.buttonColors(
+                containerColor = primaryColor,
+                disabledContainerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFE0E0E0)
+            )
         ) {
             if (isLoading) {
-                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                CircularProgressIndicator(color = if (isDark) MaterialTheme.colorScheme.onPrimary else Color.White, modifier = Modifier.size(24.dp))
             } else {
-                Text("Create account", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("Create account", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = if (isDark) MaterialTheme.colorScheme.onPrimary else Color.White)
             }
         }
 

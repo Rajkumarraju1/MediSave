@@ -45,6 +45,9 @@ fun ReminderScreen(
     viewModel: ReminderViewModel = viewModel()
 ) {
     val scrollState = rememberScrollState()
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
     val inputBg = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
     val dividerColor = MaterialTheme.colorScheme.outlineVariant
     val context = LocalContext.current
@@ -416,10 +419,10 @@ fun ReminderScreen(
                 Triple("15 minutes", 15, true),
                 Triple("30 minutes", 30, true),
                 Triple("1 hour", 60, true),
-                Triple("Never", 60, false)
+                Triple("No caregiver alerts", 60, false)
             )
             val currentSelectedText = when {
-                !viewModel.caregiverAlertEnabled.value -> "Never"
+                !viewModel.caregiverAlertEnabled.value -> "No caregiver alerts"
                 viewModel.gracePeriodMinutes.value == 60 -> "1 hour"
                 else -> "${viewModel.gracePeriodMinutes.value} minutes"
             }
