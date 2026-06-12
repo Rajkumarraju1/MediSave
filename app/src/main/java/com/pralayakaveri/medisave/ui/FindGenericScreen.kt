@@ -34,10 +34,12 @@ fun FindGenericContent(viewModel: GenericViewModel = viewModel(), onNavigateToPh
     val selectedMedicine by viewModel.selectedMedicine.collectAsState()
     val alternatives by viewModel.alternatives.collectAsState()
 
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(if (isDark) MaterialTheme.colorScheme.background else Color.White)
     ) {
         // ... (Header and search field)
         FindGenericHeader(
@@ -83,16 +85,26 @@ fun FindGenericHeader(
     onClear: () -> Unit,
     showRecent: Boolean
 ) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val headerBg = if (isDark) MaterialTheme.colorScheme.surface else PrimaryGreen
+    val titleColor = if (isDark) MaterialTheme.colorScheme.onSurface else Color.White
+    val searchContainerColor = if (isDark) MaterialTheme.colorScheme.background else Color.White
+    val searchTextColor = if (isDark) MaterialTheme.colorScheme.onSurface else TextPrimary
+    val placeholderColor = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else TextSecondary
+    val pillBgColor = if (isDark) MaterialTheme.colorScheme.background else Color.White.copy(alpha = 0.2f)
+    val pillTextColor = if (isDark) MaterialTheme.colorScheme.onSurface else Color.White
+    val cursorColor = if (isDark) MaterialTheme.colorScheme.primary else PrimaryGreen
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(PrimaryGreen)
+            .background(headerBg)
             .padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 12.dp)
     ) {
         Text(
             text = "Find generic medicine",
             fontSize = 22.sp,
-            color = Color.White,
+            color = titleColor,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -100,12 +112,12 @@ fun FindGenericHeader(
             value = searchQuery,
             onValueChange = onSearch,
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            placeholder = { Text("Crocin 500mg", color = TextSecondary) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextSecondary) },
+            placeholder = { Text("Crocin 500mg", color = placeholderColor) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = placeholderColor) },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
                     IconButton(onClick = onClear) {
-                        Icon(Icons.Default.Close, contentDescription = "Clear")
+                        Icon(Icons.Default.Close, contentDescription = "Clear", tint = searchTextColor)
                     }
                 }
             },
@@ -114,8 +126,11 @@ fun FindGenericHeader(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Color.Transparent,
                 unfocusedBorderColor = Color.Transparent,
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White
+                focusedContainerColor = searchContainerColor,
+                unfocusedContainerColor = searchContainerColor,
+                focusedTextColor = searchTextColor,
+                unfocusedTextColor = searchTextColor,
+                cursorColor = cursorColor
             )
         )
 
@@ -126,11 +141,11 @@ fun FindGenericHeader(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
-                            .background(Color.White.copy(alpha = 0.2f))
+                            .background(pillBgColor)
                             .clickable { onSearch(term) }
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        Text(text = term, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(text = term, color = pillTextColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -140,6 +155,10 @@ fun FindGenericHeader(
 
 @Composable
 fun GenericEmptyState() {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -164,12 +183,17 @@ fun GenericEmptyState() {
 
 @Composable
 fun FindGenericDetails(selectedMedicine: MedicineEntity, alternatives: List<MedicineEntity>, onNavigateToPharmacy: ((String) -> Unit)? = null) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val SoftYellowBg = if (isDark) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFFBF9F4)
+    val WarningBg = if (isDark) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFFAF7EE)
+
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(16.dp)
     ) {
         item {
-            val SoftYellowBg = Color(0xFFFBF9F4)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -230,7 +254,7 @@ fun FindGenericDetails(selectedMedicine: MedicineEntity, alternatives: List<Medi
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFFAF7EE))
+                    .background(WarningBg)
                     .padding(16.dp)
             ) {
                 Text(
@@ -249,6 +273,11 @@ fun FindGenericDetails(selectedMedicine: MedicineEntity, alternatives: List<Medi
 
 @Composable
 fun MedicineSearchResultItem(medicine: MedicineEntity, onClick: () -> Unit) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val DividerGray = if (isDark) MaterialTheme.colorScheme.outline else com.pralayakaveri.medisave.ui.theme.DividerGray
+
     Column(modifier = Modifier
         .fillMaxWidth()
         .clickable { onClick() }

@@ -15,35 +15,34 @@ object AdherenceCalculator {
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     /**
-     * Calculates the complete adherence report for a list of medicines.
+     * Calculates the complete adherence report for a list of medicines over a custom range.
      */
-    fun calculateReport(
+    fun calculateReportForRange(
         medicines: List<Medicine>,
         externalLogs: Map<String, String> = emptyMap(),
         anchorTime: ZonedDateTime,
-        lookbackDays: Int = 7
+        startDate: LocalDate,
+        endDate: LocalDate
     ): AdherenceReport {
         val forcedZone = java.time.ZoneId.of("Asia/Kolkata")
         val zonedDateTime = anchorTime.withZoneSameInstant(forcedZone)
         val anchorDate = zonedDateTime.toLocalDate()
         
-        // Calculate the Monday of the current week (for weekly bar charts)
-        val mondayDate = anchorDate.minusDays((anchorDate.dayOfWeek.value - 1).toLong())
-        
         val dailyResults = mutableListOf<DayResult>()
-        var weeklyTaken = 0
-        var weeklyTotal = 0
+        var takenCount = 0
+        var totalCount = 0
         var stableTaken = 0
         var stableTotal = 0
         var daysWithDataCount = 0
         
         var todayStats = AdherenceStats(0, 0, 0)
-        var weeklyDueTaken = 0
-        var weeklyDueTotal = 0
+        var dueTaken = 0
+        var dueTotal = 0
 
-        // Scan 7 days (Monday to Sunday)
-        for (i in 0 until 7) {
-            val loopDate = mondayDate.plusDays(i.toLong())
+        val daysCount = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate).toInt() + 1
+        
+        for (i in 0 until daysCount) {
+            val loopDate = startDate.plusDays(i.toLong())
             val dateStr = loopDate.format(dateFormatter)
             val isToday = loopDate.isEqual(anchorDate)
             val isFutureDay = loopDate.isAfter(anchorDate)
@@ -108,15 +107,13 @@ object AdherenceCalculator {
                 )
             )
 
-            // Aggregate weekly (Monday up to Today)
+            // Aggregate range up to today
             if (!isFutureDay) {
-                // OPTION A (Preferred): Always include Today's full schedule in the aggregate.
-                weeklyTaken += dayFullTaken
-                weeklyTotal += dayFullTotal
+                takenCount += dayFullTaken
+                totalCount += dayFullTotal
                 
-                // Accumulate weekly due so far
-                weeklyDueTaken += dayDueTaken
-                weeklyDueTotal += dayDueTotal
+                dueTaken += dayDueTaken
+                dueTotal += dayDueTotal
 
                 // STABLE STATS (Excluding Today)
                 if (!isToday) {
@@ -132,42 +129,55 @@ object AdherenceCalculator {
             }
         }
 
-        val dueSoFarStats = AdherenceStats(weeklyDueTaken, weeklyDueTotal, weeklyDueTotal - weeklyDueTaken)
-
-        val weeklyStats = AdherenceStats(weeklyTaken, weeklyTotal, weeklyTotal - weeklyTaken)
+        val dueSoFarStats = AdherenceStats(dueTaken, dueTotal, dueTotal - dueTaken)
+        val rangeStats = AdherenceStats(takenCount, totalCount, totalCount - takenCount)
         val isDayStarted = dueSoFarStats.total > 0
 
-        // Final Percentage (Option A)
-        val finalPercentage = if (weeklyTotal > 0) (weeklyTaken * 100) / weeklyTotal else 0
+        val finalPercentage = if (totalCount > 0) (takenCount * 100) / totalCount else 0
         val stablePercentage = if (stableTotal > 0) (stableTaken * 100) / stableTotal else 100
 
-        // DISPLAY LOGIC (Grace for early morning)
         val (displayPct, displayLabel) = when {
-            !isDayStarted && weeklyTotal > 0 -> {
-                // Before first dose: Show yesterday's percentage with a label
+            !isDayStarted && totalCount > 0 -> {
                 stablePercentage to "Day not started yet"
             }
             else -> {
-                // Normal real-time adherence
                 finalPercentage to ""
             }
-        }
-
-        if (com.pralayakaveri.medisave.BuildConfig.DEBUG) {
-            android.util.Log.d("ADHERENCE_DEBUG", "Final Report: Pct=$finalPercentage | Stable=$stablePercentage | DayStarted=$isDayStarted")
         }
 
         return AdherenceReport(
             dailyResults = dailyResults,
             todayStats = todayStats,
             dueSoFarStats = dueSoFarStats,
-            weeklyStats = weeklyStats,
+            weeklyStats = rangeStats, // weeklyStats field serves as rangeStats in AdherenceReport structure
             daysWithData = daysWithDataCount,
             adherencePercentage = finalPercentage,
             displayPercentage = "$displayPct%",
             adherenceLabel = displayLabel,
             isDayStarted = isDayStarted,
             stablePercentage = stablePercentage
+        )
+    }
+
+    /**
+     * Calculates the complete adherence report for a list of medicines.
+     */
+    fun calculateReport(
+        medicines: List<Medicine>,
+        externalLogs: Map<String, String> = emptyMap(),
+        anchorTime: ZonedDateTime,
+        lookbackDays: Int = 7
+    ): AdherenceReport {
+        val forcedZone = java.time.ZoneId.of("Asia/Kolkata")
+        val zonedDateTime = anchorTime.withZoneSameInstant(forcedZone)
+        val anchorDate = zonedDateTime.toLocalDate()
+        val mondayDate = anchorDate.minusDays((anchorDate.dayOfWeek.value - 1).toLong())
+        return calculateReportForRange(
+            medicines = medicines,
+            externalLogs = externalLogs,
+            anchorTime = anchorTime,
+            startDate = mondayDate,
+            endDate = mondayDate.plusDays(6)
         )
     }
     

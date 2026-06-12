@@ -170,6 +170,11 @@ class MedicineRepository(private val context: Context) {
         val lastUpdatedTs = extractTimestamp(doc.get("lastUpdated"))
         val createdAtTs = extractTimestamp(doc.get("createdAt"))
         
+        val nextCheckVal = extractLong(doc.get("nextCheckAt"))
+        val gracePeriodVal = doc.get("gracePeriodMinutes")
+        
+        android.util.Log.d("TIMING_TELEMETRY", "[Firestore Read-back] name: ${doc.getString("name")} | nextCheckAt: $nextCheckVal | gracePeriodMinutes (from document raw): $gracePeriodVal")
+        
         return Medicine(
             id = doc.id,
             name = doc.getString("name") ?: "",
@@ -195,6 +200,7 @@ class MedicineRepository(private val context: Context) {
             startDate = finalStartDate,
             timezone = "Asia/Kolkata",
             caregiverAlertEnabled = doc.getBoolean("caregiverAlertEnabled") ?: true,
+            gracePeriodMinutes = (doc.get("gracePeriodMinutes") as? Number)?.toInt() ?: 10,
             lastRefillNotifiedAt = extractLong(doc.get("lastRefillNotifiedAt")),
             nextCheckAt = extractLong(doc.get("nextCheckAt"))
         )
@@ -241,6 +247,21 @@ class MedicineRepository(private val context: Context) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 medicines.forEach { cloudMedicine: Medicine ->
+                    // Sync-driven notification cleanup (Self-healing notification reaper)
+                    cloudMedicine.statusMap.forEach { (statusKey, statusValue) ->
+                        if (statusValue == DoseStatus.TAKEN.name || statusValue == DoseStatus.MISSED.name) {
+                            val parts = statusKey.split("_")
+                            if (parts.size == 2) {
+                                val time = parts[1]
+                                val notificationId = (cloudMedicine.id + time).hashCode()
+                                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                                android.util.Log.d("MedicineRepo", "[ALARM_FLOW] Sync CANCELLING reminder notification for ${cloudMedicine.name} at slot $time (ID: $notificationId) via NotificationManager.cancel()")
+                                notificationManager.cancel(notificationId)
+                                android.util.Log.d("MedicineRepo", "[ALARM_FLOW] Sync Cancelled Notification for ${cloudMedicine.name} at slot $time (ID: $notificationId) successfully")
+                            }
+                        }
+                    }
+
                     val local = localDb.medicineReminderDao().getById(cloudMedicine.id)
                     
                     if (local == null) {
@@ -285,6 +306,8 @@ class MedicineRepository(private val context: Context) {
             val anchorTime = java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Kolkata"))
             val nextCheck = medicine.calculateNextCheckAt(anchorTime)
             
+            android.util.Log.d("TIMING_TELEMETRY", "[Medicine Creation] name: ${medicine.name} | configured gracePeriodMinutes: ${medicine.gracePeriodMinutes} | scheduled times: ${medicine.times} | calculated nextCheckAt: $nextCheck")
+            
             val finalMedicine = medicine.copy(id = generatedId, nextCheckAt = nextCheck)
             val entity = MedicineReminderEntity.fromMedicine(finalMedicine).copy(syncPending = true)
             localDb.medicineReminderDao().insert(entity)
@@ -308,9 +331,12 @@ class MedicineRepository(private val context: Context) {
                 "profileId" to medicine.profileId,
                 "startDate" to medicine.startDate,
                 "caregiverAlertEnabled" to medicine.caregiverAlertEnabled,
+                "gracePeriodMinutes" to medicine.gracePeriodMinutes,
                 "lastRefillNotifiedAt" to medicine.lastRefillNotifiedAt,
                 "nextCheckAt" to nextCheck
             )
+            
+            android.util.Log.d("TIMING_TELEMETRY", "[Firestore Upload] payload: $medicineData")
             
             // 3. Write to Firestore with timeout/failure isolation
             try {
@@ -342,7 +368,7 @@ class MedicineRepository(private val context: Context) {
             if (medicineEntity != null) {
                 val medicine = medicineEntity.toMedicine()
                 // 2. Cancel Alarms
-                com.pralayakaveri.medisave.reminder.ReminderManager(context).cancelAlarmsForMedicine(medicine)
+                com.pralayakaveri.medisave.reminder.ReminderManager(context).cancelAlarmsForMedicine(medicine, cancelTodayEscalations = true)
             }
 
             android.util.Log.i("MedicineRepo", "deleteMedicine locally first: $medicineId")
@@ -648,6 +674,7 @@ class MedicineRepository(private val context: Context) {
                             "profileId" to latestLocalMed.profileId,
                             "startDate" to latestLocalMed.startDate,
                             "caregiverAlertEnabled" to latestLocalMed.caregiverAlertEnabled,
+                            "gracePeriodMinutes" to latestLocalMed.gracePeriodMinutes,
                             "lastRefillNotifiedAt" to latestLocalMed.lastRefillNotifiedAt,
                             "nextCheckAt" to latestLocalMed.nextCheckAt
                         )
@@ -665,6 +692,7 @@ class MedicineRepository(private val context: Context) {
                             transaction.update(docRef, "pillsLeft", latestLocalMed.pillsLeft)
                             transaction.update(docRef, "totalStock", latestLocalMed.totalStock)
                             transaction.update(docRef, "totalTaken", latestLocalMed.totalTaken)
+                            transaction.update(docRef, "gracePeriodMinutes", latestLocalMed.gracePeriodMinutes)
                             transaction.update(docRef, "nextCheckAt", latestLocalMed.nextCheckAt)
                             transaction.update(docRef, "lastRefillNotifiedAt", latestLocalMed.lastRefillNotifiedAt)
                             transaction.update(docRef, "lastUpdated", com.google.firebase.Timestamp(java.util.Date(latestLocalMed.lastUpdated)))

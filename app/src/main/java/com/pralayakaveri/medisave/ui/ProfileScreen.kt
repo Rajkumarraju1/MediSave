@@ -176,11 +176,12 @@ fun ProfileScreen(
             ) {
                 // 1. Unified Green Header Block
                 item {
+                    val isDarkHeader = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
-                            .background(BrandingGreen)
+                            .background(if (isDarkHeader) MaterialTheme.colorScheme.surface else BrandingGreen)
                     ) {
                         Column(
                             modifier = Modifier
@@ -197,7 +198,7 @@ fun ProfileScreen(
                                         .size(56.dp)
                                         .clickable { onNavigateToAccount() },
                                     shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.onPrimary
+                                    color = if (isDarkHeader) MaterialTheme.colorScheme.secondaryContainer else Color.White
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Text(
@@ -205,7 +206,7 @@ fun ProfileScreen(
                                                 ?: "?",
                                             fontSize = 24.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary
+                                            color = if (isDarkHeader) MaterialTheme.colorScheme.primary else BrandingGreen
                                         )
                                     }
                                 }
@@ -217,7 +218,7 @@ fun ProfileScreen(
                                         text = user.name,
                                         fontSize = 22.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        color = Color.White,
                                         maxLines = 2,
                                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                     )
@@ -226,7 +227,7 @@ fun ProfileScreen(
                                     Text(
                                         text = "Age ${user.age.takeIf { it.isNotBlank() } ?: "--"} · $conditionText",
                                         fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                                        color = Color.White.copy(alpha = 0.7f)
                                     )
                                 }
 
@@ -243,7 +244,7 @@ fun ProfileScreen(
                                     .fillMaxWidth()
                                     .clickable { onNavigateToCode() },
                                 shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
+                                color = Color.White.copy(alpha = 0.12f)
                             ) {
                                 Row(
                                     modifier = Modifier.padding(16.dp),
@@ -252,13 +253,13 @@ fun ProfileScreen(
                                     Surface(
                                         modifier = Modifier.size(40.dp),
                                         shape = CircleShape,
-                                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f)
+                                        color = Color.White.copy(alpha = 0.15f)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Icon(
                                                 Icons.Default.Share,
                                                 contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onPrimary,
+                                                tint = Color.White,
                                                 modifier = Modifier.size(20.dp)
                                             )
                                         }
@@ -271,19 +272,19 @@ fun ProfileScreen(
                                             text = "My Connection Code",
                                             fontSize = 15.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onPrimary
+                                            color = Color.White
                                         )
                                         Text(
                                             text = "Share this code to connect with family",
                                             fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                                            color = Color.White.copy(alpha = 0.7f)
                                         )
                                     }
 
                                     Icon(
                                         Icons.Default.KeyboardArrowRight,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f)
+                                        tint = Color.White.copy(alpha = 0.5f)
                                     )
                                 }
                             }
@@ -442,6 +443,9 @@ fun EditMemberBottomSheet(
     onUpdate: (String) -> Unit,
     onDelete: () -> Unit
 ) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
     val sheetState = rememberModalBottomSheetState()
     
     var name by remember { mutableStateOf(member.name) }
@@ -596,10 +600,10 @@ fun AddTrayButton(onClick: () -> Unit) {
                     .clickable { onClick() },
                 contentAlignment = Alignment.Center
             ) {
-                Text("+", fontSize = 20.sp, color = MaterialTheme.colorScheme.onPrimary)
+                Text("+", fontSize = 20.sp, color = Color.White)
             }
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Add", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimary)
+            Text("Add", fontSize = 11.sp, color = Color.White)
     }
 }
 
@@ -656,6 +660,9 @@ fun MemberCard(
         onView: () -> Unit,
         onEdit: () -> Unit
     ) {
+        val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+        val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+        val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
         val isPrimary = profile.type == MemberType.PRIMARY
         val isLive = profile.type == MemberType.CONNECTED || isPrimary
 
@@ -798,7 +805,7 @@ fun MemberCard(
                         progress = { profile.adherence / 100f },
                         modifier = Modifier.weight(1f).height(8.dp).clip(CircleShape),
                         color = if (profile.adherence >= 80) PrimaryGreen else Color(0xFFFFA000),
-                        trackColor = Color(0xFFEEEEEE),
+                        trackColor = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFEEEEEE),
                         strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -828,12 +835,16 @@ fun StatusBadge(text: String, color: Color, textColor: Color) {
 
 @Composable
 fun AddMemberDashedButton(onClick: () -> Unit) {
+        val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+        val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+        val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+        val outlineColor = if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .drawBehind {
                     drawRoundRect(
-                        color = Color.LightGray,
+                        color = outlineColor,
                         style = Stroke(
                             width = 1.dp.toPx(),
                             pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
@@ -864,9 +875,12 @@ fun AddMemberDashedButton(onClick: () -> Unit) {
 
 @Composable
 fun PremiumBanner() {
+        val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+        val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+        val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = Color(0xFFFFF3E0),
+            color = if (isDark) MaterialTheme.colorScheme.secondaryContainer else Color(0xFFFFF3E0),
             shape = RoundedCornerShape(16.dp)
         ) {
             Row(
@@ -908,11 +922,14 @@ fun PremiumBanner() {
 
 @Composable
 fun SettingsEntry(onClick: () -> Unit) {
+        val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+        val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+        val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
         Surface(
             modifier = Modifier.fillMaxWidth().clickable { onClick() },
             shape = RoundedCornerShape(16.dp),
-            color = Color.White,
-            border = BorderStroke(1.dp, Color(0xFFEEEEEE))
+            color = if (isDark) MaterialTheme.colorScheme.surface else Color.White,
+            border = BorderStroke(1.dp, if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFEEEEEE))
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
@@ -921,7 +938,7 @@ fun SettingsEntry(onClick: () -> Unit) {
                 Surface(
                     modifier = Modifier.size(40.dp),
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFF5F5F5)
+                    color = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFF5F5F5)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -949,7 +966,7 @@ fun SettingsEntry(onClick: () -> Unit) {
                 Icon(
                     Icons.Default.KeyboardArrowRight,
                     contentDescription = null,
-                    tint = Color.LightGray
+                    tint = if (isDark) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f) else Color.LightGray
                 )
             }
         }
@@ -957,13 +974,16 @@ fun SettingsEntry(onClick: () -> Unit) {
 
 @Composable
 fun ConnectionRequestsSettingsEntry(count: Int, onClick: () -> Unit) {
+        val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+        val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+        val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onClick() },
             shape = RoundedCornerShape(16.dp),
-            color = Color.White,
-            border = BorderStroke(1.dp, Color(0xFFEEEEEE))
+            color = if (isDark) MaterialTheme.colorScheme.surface else Color.White,
+            border = BorderStroke(1.dp, if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFEEEEEE))
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
@@ -972,7 +992,7 @@ fun ConnectionRequestsSettingsEntry(count: Int, onClick: () -> Unit) {
                 Surface(
                     modifier = Modifier.size(40.dp),
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFF5F5F5)
+                    color = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color(0xFFF5F5F5)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -1001,7 +1021,7 @@ fun ConnectionRequestsSettingsEntry(count: Int, onClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowRight,
                     contentDescription = null,
-                    tint = Color.LightGray
+                    tint = if (isDark) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f) else Color.LightGray
                 )
             }
         }

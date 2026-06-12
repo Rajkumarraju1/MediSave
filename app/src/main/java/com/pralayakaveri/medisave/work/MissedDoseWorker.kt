@@ -68,7 +68,10 @@ class MissedDoseWorker(
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         
         // Cancel the original reminder notification if it's still showing
-        notificationManager.cancel((inputData.getString("MEDICINE_ID")!! + time).hashCode())
+        val cancelId = (inputData.getString("MEDICINE_ID")!! + time).hashCode()
+        android.util.Log.d("MissedDoseWorker", "[ALARM_FLOW] Worker CANCELLING reminder notification for $name at $time (ID: $cancelId) via NotificationManager.cancel()")
+        notificationManager.cancel(cancelId)
+        android.util.Log.d("MissedDoseWorker", "[ALARM_FLOW] Worker Cancelled reminder notification successfully")
 
         val builder = NotificationCompat.Builder(applicationContext, AlarmReceiver.CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
@@ -77,6 +80,9 @@ class MissedDoseWorker(
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
 
-        notificationManager.notify((inputData.getString("MEDICINE_ID")!! + time + "MISSED").hashCode(), builder.build())
+        val missedId = (inputData.getString("MEDICINE_ID")!! + time + "MISSED").hashCode()
+        android.util.Log.d("MissedDoseWorker", "[ALARM_FLOW] Worker posting Missed Notification for $name at $time (ID: $missedId) via NotificationManager.notify()")
+        notificationManager.notify(missedId, builder.build())
+        android.util.Log.d("MissedDoseWorker", "[ALARM_FLOW] Worker Posted Missed Notification successfully")
     }
 }

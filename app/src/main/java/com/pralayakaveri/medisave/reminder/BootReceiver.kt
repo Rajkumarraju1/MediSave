@@ -30,7 +30,7 @@ class BootReceiver : BroadcastReceiver() {
             action == "android.intent.action.TIME_SET" ||
             action == "com.pralayakaveri.medisave.TRIGGER_RESCHEDULE") {
 
-            val pendingResult = goAsync()
+            val pendingResult: BroadcastReceiver.PendingResult? = goAsync()
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
             scope.launch {
@@ -46,7 +46,7 @@ class BootReceiver : BroadcastReceiver() {
                 } catch (e: Exception) {
                     Log.e("BootReceiver", "Error processing boot completed inside goAsync scope", e)
                 } finally {
-                    pendingResult.finish()
+                    pendingResult?.finish()
                     scope.cancel()
                 }
             }

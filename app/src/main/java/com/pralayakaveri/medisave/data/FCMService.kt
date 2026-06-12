@@ -17,6 +17,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.tasks.await
+import com.google.firebase.firestore.FirebaseFirestore
 
 class FCMService : FirebaseMessagingService() {
 
@@ -125,14 +127,12 @@ class FCMService : FirebaseMessagingService() {
             .setContentText(body)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setGroup(GROUP_MISSED_DOSES)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setTimeoutAfter(86400000) // 24 Hours
             .build()
 
         notificationManager.notify(logId.hashCode(), notification)
-        showSummaryNotification(notificationManager, channelId)
     }
 
     private fun showCaregiverAlertNotification(data: Map<String, String>) {
@@ -157,9 +157,6 @@ class FCMService : FirebaseMessagingService() {
         val medicineName = data["medicineName"] ?: "Medicine"
         val logId = data["logId"] ?: ""
         val time = data["scheduledTime"] ?: ""
-        
-        val title = "Missed Dose: $patientName"
-        val body = "$patientName missed their $medicineName at $time"
 
         val intent = Intent(this, MainActivity::class.java).apply {
             putExtra("type", "MISSED")
@@ -178,39 +175,50 @@ class FCMService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setGroup(GROUP_MISSED_DOSES)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-            .build()
+        // Asynchronously query Firestore to resolve connection labels (relationship)
+        val currentUserId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        
+        serviceScope.launch {
+            val relation = if (currentUserId != null && patientId.isNotEmpty()) {
+                val connectionId = listOf(currentUserId, patientId).sorted().joinToString("_")
+                try {
+                    val connDoc = FirebaseFirestore.getInstance().collection("active_connections")
+                        .document(connectionId).get().await()
+                    val labels = connDoc.get("labels") as? Map<*, *>
+                    labels?.get(currentUserId)?.toString() ?: connDoc.getString("relation") ?: ""
+                } catch (e: Exception) { "" }
+            } else { "" }
 
-        // logId.hashCode() ensures deterministic ID for OS-level deduplication
-        notificationManager.notify(logId.hashCode(), notification)
-        showSummaryNotification(notificationManager, channelId)
+            val titleName = if (relation.isNotEmpty() && relation != "Family Member") "$patientName ($relation)" else patientName
+            val title = "⚠️ Missed Dose: $titleName"
+
+            val formattedContent = buildString {
+                append("$patientName did not confirm their $medicineName dose.")
+                append("\n\n🕒 Scheduled: $time")
+                append("\n\n⚠️ Please review their medication schedule.")
+            }
+
+            val builder = NotificationCompat.Builder(this@FCMService, channelId)
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setContentTitle(title)
+                .setContentText("$patientName did not confirm their $medicineName dose.")
+                .setStyle(NotificationCompat.BigTextStyle().bigText(formattedContent))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setGroup(CaregiverNotificationManager.GROUP_CAREGIVER_ALERTS)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .addAction(android.R.drawable.ic_menu_info_details, "📋 View Schedule", pendingIntent)
+
+            // logId.hashCode() ensures deterministic ID for OS-level deduplication
+            notificationManager.notify(logId.hashCode(), builder.build())
+            
+            // Post/update the summary notification
+            CaregiverNotificationManager(this@FCMService).updateCaregiverSummaryNotification(notificationManager)
+        }
     }
 
-    private fun showSummaryNotification(notificationManager: NotificationManager, channelId: String) {
-        val summaryNotification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Missed Doses")
-            .setContentText("Multiple family members missed their medication")
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setGroup(GROUP_MISSED_DOSES)
-            .setGroupSummary(true)
-            .setAutoCancel(true)
-            .build()
 
-        notificationManager.notify(SUMMARY_ID, summaryNotification)
-    }
-
-    companion object {
-        private const val GROUP_MISSED_DOSES = "com.pralayakaveri.medisave.MISSED_DOSES"
-        private const val SUMMARY_ID = 1000
-    }
 
     private fun showConnectionRequestNotification(requestId: String, senderId: String) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

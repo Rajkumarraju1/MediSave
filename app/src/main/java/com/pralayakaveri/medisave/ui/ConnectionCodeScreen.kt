@@ -42,6 +42,11 @@ fun ConnectionCodeScreen(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
 
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val primaryColor = if (isDark) MaterialTheme.colorScheme.primary else BrandingGreen
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -49,7 +54,8 @@ fun ConnectionCodeScreen(
                     Text(
                         "Family connection", 
                         fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleLarge,
+                        color = TextPrimary
                     ) 
                 },
                 navigationIcon = {
@@ -57,7 +63,8 @@ fun ConnectionCodeScreen(
                         Icon(
                             Icons.Default.ArrowBackIosNew, 
                             contentDescription = "Back", 
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(20.dp),
+                            tint = TextPrimary
                         )
                     }
                 },
@@ -76,13 +83,14 @@ fun ConnectionCodeScreen(
                         .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = BrandingGreen
+                        containerColor = primaryColor
                     )
                 ) {
                     Text(
                         "+ Connect a family member",
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDark) MaterialTheme.colorScheme.onPrimary else Color.White
                     )
                 }
             }
@@ -105,14 +113,14 @@ fun ConnectionCodeScreen(
                     Surface(
                         modifier = Modifier.size(80.dp),
                         shape = CircleShape,
-                        color = BrandingGreen.copy(alpha = 0.1f)
+                        color = primaryColor.copy(alpha = 0.1f)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.GroupAdd,
                                 contentDescription = null,
                                 modifier = Modifier.size(32.dp),
-                                tint = BrandingGreen
+                                tint = primaryColor
                             )
                         }
                     }
@@ -123,7 +131,7 @@ fun ConnectionCodeScreen(
                         text = "Your connection code",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = TextPrimary
                     )
                     
                     Spacer(modifier = Modifier.height(8.dp))
@@ -131,7 +139,7 @@ fun ConnectionCodeScreen(
                     Text(
                         text = "Share this with family members so they can\nconnect with you",
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                        color = TextSecondary,
                         textAlign = TextAlign.Center,
                         lineHeight = 20.sp
                     )
@@ -142,10 +150,10 @@ fun ConnectionCodeScreen(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        color = BrandingGreen.copy(alpha = 0.05f),
+                        color = primaryColor.copy(alpha = 0.05f),
                         border = androidx.compose.foundation.BorderStroke(
                             1.dp, 
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                            primaryColor.copy(alpha = 0.2f)
                         )
                     ) {
                         Column(
@@ -156,14 +164,14 @@ fun ConnectionCodeScreen(
                                 text = primaryUser?.connectionCode?.map { it.toString() }?.joinToString(" ") ?: "— — — — — —",
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.Black,
-                                color = BrandingGreen,
+                                color = primaryColor,
                                 letterSpacing = 2.sp
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Expires in 29 days · Tap to refresh",
                                 fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                                color = TextSecondary.copy(alpha = 0.8f)
                             )
                         }
                     }
@@ -188,21 +196,21 @@ fun ConnectionCodeScreen(
                                 .height(56.dp),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = BrandingGreen
+                                containerColor = primaryColor
                             )
                         ) {
                             Icon(
                                 Icons.Default.GroupAdd, 
                                 contentDescription = null, 
                                 modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.onPrimary
+                                tint = if (isDark) MaterialTheme.colorScheme.onPrimary else Color.White
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 "Share on WhatsApp", 
                                 fontSize = 14.sp, 
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimary
+                                color = if (isDark) MaterialTheme.colorScheme.onPrimary else Color.White
                             )
                         }
 
@@ -214,11 +222,21 @@ fun ConnectionCodeScreen(
                                 .weight(0.9f)
                                 .height(56.dp),
                             shape = RoundedCornerShape(12.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                            border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray.copy(alpha = 0.6f))
                         ) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurface)
+                            Icon(
+                                Icons.Default.ContentCopy, 
+                                contentDescription = null, 
+                                modifier = Modifier.size(18.dp), 
+                                tint = TextPrimary
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Copy code", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Text(
+                                "Copy code", 
+                                fontSize = 14.sp, 
+                                fontWeight = FontWeight.Bold, 
+                                color = TextPrimary
+                            )
                         }
                     }
                 }
@@ -237,11 +255,11 @@ fun ConnectionCodeScreen(
                         text = "People connected to you",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = TextPrimary
                     )
                     
                     Surface(
-                        color = BrandingGreen.copy(alpha = 0.1f),
+                        color = primaryColor.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(50)
                     ) {
                         Text(
@@ -249,22 +267,21 @@ fun ConnectionCodeScreen(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = BrandingGreen
+                            color = primaryColor
                         )
                     }
                 }
             }
 
             items(connections) { connection ->
-                val otherName = if (connection.senderId == primaryUser?.userId) "Member" else "Family" // Placeholder logic
                 ConnectedMemberItem(
-                    name = "Family Member", // Since Connection doesn't store name directly, normally we'd fetch it
+                    name = "Family Member",
                     relation = connection.relation,
-                    daysAgo = "Connected today" // Placeholder
+                    daysAgo = "Connected today"
                 )
                 HorizontalDivider(
                     modifier = Modifier.padding(horizontal = 24.dp),
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
+                    color = if (isDark) MaterialTheme.colorScheme.outlineVariant else Color.LightGray.copy(alpha = 0.3f)
                 )
             }
         }
@@ -273,6 +290,10 @@ fun ConnectionCodeScreen(
 
 @Composable
 fun ConnectedMemberItem(name: String, relation: String, daysAgo: String) {
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val primaryColor = if (isDark) MaterialTheme.colorScheme.primary else BrandingGreen
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -282,14 +303,14 @@ fun ConnectedMemberItem(name: String, relation: String, daysAgo: String) {
         Surface(
             modifier = Modifier.size(48.dp),
             shape = CircleShape,
-            color = BrandingGreen.copy(alpha = 0.1f)
+            color = primaryColor.copy(alpha = 0.1f)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(
                     text = name.firstOrNull()?.toString()?.uppercase() ?: "?",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = BrandingGreen
+                    color = primaryColor
                 )
             }
         }
@@ -301,30 +322,30 @@ fun ConnectedMemberItem(name: String, relation: String, daysAgo: String) {
                 text = name,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = TextPrimary
             )
             Text(
                 text = "$relation · $daysAgo",
                 fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                color = TextSecondary
             )
         }
         
         Surface(
-            color = BrandingGreen.copy(alpha = 0.1f),
+            color = primaryColor.copy(alpha = 0.1f),
             shape = RoundedCornerShape(50)
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(BrandingGreen))
+                Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(primaryColor))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = "Active",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = BrandingGreen
+                    color = primaryColor
                 )
             }
         }

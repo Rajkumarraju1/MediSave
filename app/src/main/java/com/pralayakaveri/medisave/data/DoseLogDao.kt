@@ -20,6 +20,9 @@ interface DoseLogDao {
     @Query("SELECT * FROM dose_logs WHERE userId = :userId AND date >= :startDate")
     fun getLogsForUser(userId: String, startDate: String): Flow<List<DoseLogEntity>>
 
+    @Query("SELECT * FROM dose_logs WHERE date >= :startDate")
+    suspend fun getLogsFromDate(startDate: String): List<DoseLogEntity>
+
     @Query("SELECT * FROM dose_logs WHERE userId = :userId AND date = :date AND time = :time AND medicineName = :medicineName LIMIT 1")
     suspend fun getLog(userId: String, medicineName: String, date: String, time: String): DoseLogEntity?
 

@@ -34,19 +34,32 @@ fun EditProfileScreen(
             name = it.name
         }
     }
+
+    val isDark = MaterialTheme.colorScheme.background == Color(0xFF0B0F0C)
+    val TextPrimary = if (isDark) MaterialTheme.colorScheme.onBackground else com.pralayakaveri.medisave.ui.theme.TextPrimary
+    val TextSecondary = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else com.pralayakaveri.medisave.ui.theme.TextSecondary
+    val primaryColor = if (isDark) MaterialTheme.colorScheme.primary else BrandingGreen
     
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit Profile", fontWeight = FontWeight.Bold) },
+                title = { Text("Edit Profile", fontWeight = FontWeight.Bold, color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Back", modifier = Modifier.size(20.dp))
+                        Icon(
+                            Icons.Default.ArrowBackIosNew,
+                            contentDescription = "Back",
+                            modifier = Modifier.size(20.dp),
+                            tint = TextPrimary
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = if (isDark) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surface
+                )
             )
         },
-        containerColor = Color(0xFFF9F9F9)
+        containerColor = if (isDark) MaterialTheme.colorScheme.background else Color(0xFFF9F9F9)
     ) { padding ->
         Column(
             modifier = Modifier
@@ -59,14 +72,14 @@ fun EditProfileScreen(
             Surface(
                 modifier = Modifier.size(100.dp),
                 shape = CircleShape,
-                color = BrandingGreen.copy(alpha = 0.1f)
+                color = primaryColor.copy(alpha = 0.1f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         text = name.getOrNull(0)?.toString()?.uppercase() ?: "?",
                         fontSize = 36.sp,
                         fontWeight = FontWeight.Bold,
-                        color = BrandingGreen
+                        color = primaryColor
                     )
                 }
             }
@@ -81,8 +94,12 @@ fun EditProfileScreen(
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BrandingGreen,
-                    focusedLabelColor = BrandingGreen
+                    focusedBorderColor = primaryColor,
+                    unfocusedBorderColor = if (isDark) MaterialTheme.colorScheme.outline else Color.LightGray,
+                    focusedLabelColor = primaryColor,
+                    unfocusedLabelColor = TextSecondary,
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary
                 )
             )
             
@@ -106,15 +123,23 @@ fun EditProfileScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = BrandingGreen),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = primaryColor,
+                    disabledContainerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFE0E0E0)
+                ),
                 enabled = !isLoading && name.isNotBlank()
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = if (isDark) MaterialTheme.colorScheme.onPrimary else Color.White)
                 } else {
-                    Icon(Icons.Default.Save, contentDescription = null)
+                    Icon(Icons.Default.Save, contentDescription = null, tint = if (isDark) MaterialTheme.colorScheme.onPrimary else Color.White)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Save Changes", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(
+                        "Save Changes",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = if (isDark) MaterialTheme.colorScheme.onPrimary else Color.White
+                    )
                 }
             }
         }

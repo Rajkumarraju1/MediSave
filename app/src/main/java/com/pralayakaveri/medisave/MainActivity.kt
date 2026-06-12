@@ -111,14 +111,29 @@ class MainActivity : AppCompatActivity() {
         val targetMedicineId = intent.getStringExtra("TARGET_MEDICINE_ID")
 
         setContent {
-            // Force Light Mode for AppCompatDialogs and Activities
-            LaunchedEffect(Unit) {
-                androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO)
+            val prefManager = remember { com.pralayakaveri.medisave.data.PreferenceManager(applicationContext) }
+            val themePreference by prefManager.appTheme.collectAsState(initial = null)
+
+            val isSystemDark = androidx.compose.foundation.isSystemInDarkTheme()
+            val currentTheme = themePreference ?: "Light"
+            val isDark = currentTheme == "Dark"
+
+            if (themePreference != null) {
+                LaunchedEffect(isDark) {
+                    val mode = if (isDark) {
+                        androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
+                    } else {
+                        androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
+                    }
+                    if (androidx.appcompat.app.AppCompatDelegate.getDefaultNightMode() != mode) {
+                        androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(mode)
+                    }
+                }
             }
 
             val targetMedicineId = intent.getStringExtra("TARGET_MEDICINE_ID")
 
-            MediSaveTheme {
+            MediSaveTheme(themePreference = currentTheme) {
                 MainScreen(
                     targetMedicineId = targetMedicineId,
                     deepLinkRequestId = deepLinkRequestId.value,
