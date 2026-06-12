@@ -7,10 +7,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #6366f1;
-            --primary-light: #818cf8;
-            --bg-dark: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
+            --primary: #1D9E75;
+            --primary-light: #44CBA0;
+            --bg-dark: #0B0F0C;
+            --card-bg: rgba(21, 30, 24, 0.7);
             --border-color: rgba(255, 255, 255, 0.08);
             --text-main: #f8fafc;
             --text-secondary: #94a3b8;
@@ -29,8 +29,8 @@
             line-height: 1.6;
             overflow-x: hidden;
             background-image: 
-                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.12) 0%, transparent 40%);
+                radial-gradient(circle at 10% 20%, rgba(29, 158, 117, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(21, 126, 93, 0.12) 0%, transparent 40%);
             background-attachment: fixed;
         }
 
@@ -43,7 +43,7 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(11, 15, 12, 0.8);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border-color);
         }
@@ -52,7 +52,7 @@
             font-family: 'Outfit', sans-serif;
             font-size: 1.8rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #a5b4fc, var(--primary-light));
+            background: linear-gradient(135deg, #A8F0D8, var(--primary-light));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             display: flex;
@@ -76,7 +76,7 @@
 
         .nav-links a:hover {
             color: var(--primary-light);
-            text-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+            text-shadow: 0 0 10px rgba(29, 158, 117, 0.3);
         }
 
         /* Content Container */
@@ -96,7 +96,7 @@
             font-size: 3rem;
             font-weight: 700;
             margin-bottom: 1rem;
-            background: linear-gradient(to right, #ffffff, #c7d2fe, #818cf8);
+            background: linear-gradient(to right, #ffffff, #c7d2fe, #44CBA0);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -134,7 +134,7 @@
         textarea {
             width: 100%;
             padding: 12px 16px;
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(11, 15, 12, 0.8);
             border: 1px solid var(--border-color);
             border-radius: 12px;
             color: white;
@@ -147,11 +147,11 @@
         textarea:focus {
             outline: none;
             border-color: var(--primary-light);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+            box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.15);
         }
 
         .submit-btn {
-            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            background: linear-gradient(135deg, var(--primary), #157E5D);
             color: white;
             border: none;
             padding: 14px 28px;
@@ -165,7 +165,7 @@
         }
 
         .submit-btn:hover {
-            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 10px 20px -5px rgba(29, 158, 117, 0.4);
             transform: translateY(-1px);
         }
 
@@ -174,7 +174,7 @@
             margin-top: 8rem;
             padding: 4rem 5% 3rem;
             border-top: 1px solid var(--border-color);
-            background: rgba(15, 23, 42, 0.95);
+            background: rgba(11, 15, 12, 0.8);
             text-align: center;
         }
 
@@ -201,7 +201,7 @@
 <body>
 
     <nav>
-        <a href="index.html" class="logo">💊 MediSave</a>
+        <a href="index.html" class="logo"><img src="logo_medisave.png" alt="MediSave Logo" style="height: 36px; vertical-align: middle;">MediSave</a>
         <ul class="nav-links">
             <li><a href="index.html">Home</a></li>
             <li><a href="privacy.html">Privacy Policy</a></li>
@@ -236,7 +236,7 @@
     </div>
 
     <footer>
-        <div class="footer-logo">💊 MediSave</div>
+        <div class="footer-logo"><img src="logo_medisave.png" alt="MediSave Logo" style="height: 32px; vertical-align: middle; margin-right: 8px;">MediSave</div>
         <p class="copyright">&copy; 2026 MediSave App. GitHub Pages Production Node.</p>
     </footer>
 
